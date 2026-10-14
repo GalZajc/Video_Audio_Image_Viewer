@@ -1,0 +1,695 @@
+[
+  {
+    "group": "Predvajanje",
+    "items": [
+      [
+        "play-video",
+        "Zanesljivo odpiranje in predvajanje običajnih video formatov, tudi MP4, MKV, MOV, WebM in AVI."
+      ],
+      [
+        "play-audio",
+        "Odpiranje in predvajanje zvočnih datotek, tudi MP3, WAV, FLAC, M4A in OGG."
+      ],
+      [
+        "play-response",
+        "Preskoki in spremembe hitrosti naj bodo odzivni, brez približno sekundnih zastojev kot v VLC. Preveri tudi dolg posnetek."
+      ],
+      [
+        "play-space",
+        "Space preklopi med predvajanjem in premorom."
+      ],
+      [
+        "play-seek",
+        "Puščici levo in desno preskočita 5 sekund nazaj oziroma naprej."
+      ],
+      [
+        "play-frames",
+        "Vejica in pika omogočata premik po dejanskih sličicah, tudi pri spremenljivi hitrosti sličic."
+      ],
+      [
+        "play-slower",
+        "S zmanjša hitrost za 10 odstotnih točk (npr. 100 % → 90 %)."
+      ],
+      [
+        "play-faster",
+        "D poveča hitrost za 10 odstotnih točk. D ne odpira risanja."
+      ],
+      [
+        "play-fallback",
+        "Format, ki ga Chromium neposredno ne predvaja, se pripravi lokalno; prikazan je napredek."
+      ],
+      [
+        "play-ui",
+        "Glavni prostor zavzema posnetek; brez odvečnih gumbov in orodnih vrstic, upravljanje predvsem z bližnjicami."
+      ]
+    ]
+  },
+  {
+    "group": "Slike, povečava in premik",
+    "items": [
+      [
+        "image-open",
+        "Slike se odpirajo v isti aplikaciji: PNG, JPEG, WebP, BMP, TIFF, AVIF in ICO. SVG lahko odpreš ročno; nima privzete povezave. GIF se obravnava kot video."
+      ],
+      [
+        "image-timeline",
+        "Pri slikah ni časovnice."
+      ],
+      [
+        "view-zoom",
+        "Ctrl+kolešček pri ustavljenem videu oziroma sliki povečuje in pomanjšuje."
+      ],
+      [
+        "view-anchor",
+        "Ctrl+kolešček ohrani točko pod kazalcem; R postavi premakljivo modro vrtišče pod kazalec in rotacija ohrani merilo ter vrtišče."
+      ],
+      [
+        "view-pan",
+        "Ctrl+levi klik in vlek premikata povečano sliko oziroma ustavljeni video, tudi med risanjem."
+      ],
+      [
+        "view-pixels",
+        "Pri veliki povečavi se piksli vidijo kot ostri kvadratki, brez glajenja."
+      ],
+      [
+        "view-tab-state",
+        "Povečava, premik in druge nastavitve posnetka se ohranijo pri menjavi zavihkov."
+      ]
+    ]
+  },
+  {
+    "group": "Časovni interval in časovnica",
+    "items": [
+      [
+        "time-in",
+        "I označi trenutno sličico kot začetek; ta sličica je vključena v izvoz."
+      ],
+      [
+        "time-out",
+        "O označi trenutno sličico kot konec; tudi ta sličica je vključena v izvoz."
+      ],
+      [
+        "time-playing",
+        "I in O delujeta tudi med predvajanjem."
+      ],
+      [
+        "time-one",
+        "Za posamezen posnetek obstaja en izbrani časovni izrez."
+      ],
+      [
+        "time-colors",
+        "Izbrani interval je svetlo moder, preostala časovnica rdeča kot na YouTubu."
+      ],
+      [
+        "time-head",
+        "Krogec za predvajanje je svetlo moder znotraj intervala in rdeč zunaj njega."
+      ],
+      [
+        "time-expand",
+        "Dvoklik svetlo modrega intervala ga raztegne na celotno časovnico."
+      ],
+      [
+        "time-collapse",
+        "Naslednji dvoklik kjerkoli na povečani časovnici spet prikaže celoten posnetek."
+      ],
+      [
+        "time-escape",
+        "Esc zapusti povečano časovnico in ohrani oznaki I/O."
+      ],
+      [
+        "time-idle",
+        "Časovnica izgine, ko miška miruje, tudi med premorom; ob premiku miške se spet pokaže."
+      ],
+      [
+        "time-single-frame",
+        "Če sta I in O na isti sličici, Ctrl+S izvozi eno sliko PNG."
+      ]
+    ]
+  },
+  {
+    "group": "Prostorski obrez",
+    "items": [
+      [
+        "crop-shortcut",
+        "Shift+S pokaže obrez z vodoravnimi/navpičnimi stranicami tudi po rotaciji; okvir lahko zajame ozadje znotraj celotnega bounding boxa."
+      ],
+      [
+        "crop-appearance",
+        "Okvir ustreza obrezu v programu Video Downloader: prosojno črna okolica, premakljivi vogali, brez dodatnih gumbov."
+      ],
+      [
+        "crop-corners",
+        "Vogale in robove obrezovalnega okvirja lahko natančno premikaš."
+      ],
+      [
+        "crop-first",
+        "Prvi Shift+S postavi okvir v trenutno vidni del povečane slike, ne izven zaslona."
+      ],
+      [
+        "crop-remember",
+        "Ponovni Shift+S za isti posnetek pokaže okvir tam, kjer si ga prej postavil."
+      ],
+      [
+        "crop-zoom",
+        "Okvir ostane viden in poravnan s posnetkom med povečavo in translacijo."
+      ],
+      [
+        "crop-precision",
+        "Z veliko povečavo lahko obrez nastaviš natančno na izvorne piksle."
+      ],
+      [
+        "crop-escape",
+        "Esc skrije prostorski okvir; nastavljeni obrez ostane shranjen za izvoz."
+      ],
+      [
+        "crop-export",
+        "Izvoz upošteva prostorski obrez skupaj z intervalom I/O."
+      ]
+    ]
+  },
+  {
+    "group": "Esc, velikost okna in fullscreen",
+    "items": [
+      [
+        "esc-order",
+        "Esc se sproži ob izpustu: meni/risanje, rotacija, obrez, povečana časovnica, centriranje, izničenje neničelne rotacije, velikost okna."
+      ],
+      [
+        "esc-reset",
+        "Ko okvir in povečana časovnica nista odprta, Esc vrne sliko na 100 % povečavo in jo centrira."
+      ],
+      [
+        "esc-aspect",
+        "Esc zmanjša okno do razmerja posnetka; Shift+Esc ga poveča, vedno znotraj zaslona."
+      ],
+      [
+        "esc-max",
+        "Dodatni Esc poveča in centrira največje okno pravilnega razmerja samo, če je vključena nastavitev (privzeto izključena)."
+      ],
+      [
+        "esc-header",
+        "Prilagajanje razmerja okna z Esc deluje pri vidni in skriti vrstici zavihkov."
+      ],
+      [
+        "full-double",
+        "Dvoklik videa ali slike vključi dejanski celozaslonski način; naslednji dvoklik ga izključi."
+      ],
+      [
+        "full-f",
+        "F skrije oziroma pokaže vrstico zavihkov, tako da posnetek zapolni Electron okno."
+      ],
+      [
+        "full-window",
+        "Način F deluje tudi pri povečanem oknu; velikost samega okna se zaradi F ne spremeni."
+      ],
+      [
+        "window-minimize",
+        "Gumb minus ima ozek simbol in podobno širino kot ostali gumbi za okno."
+      ]
+    ]
+  },
+  {
+    "group": "Zavihki in zgodovina",
+    "items": [
+      [
+        "tabs-many",
+        "Več datotek je lahko odprtih v ločenih zavihkih."
+      ],
+      [
+        "tabs-width",
+        "Zavihki začnejo s stalno širino in se enakomerno skrčijo, ko zmanjka prostora."
+      ],
+      [
+        "tabs-height",
+        "Zavihki so nizki in kompaktnejši kot v Chromu."
+      ],
+      [
+        "tabs-shape",
+        "Zavihki imajo ravne črtice med seboj; zaobljen je le prvi zunanji vogal okna."
+      ],
+      [
+        "tabs-middle",
+        "Srednji klik zapre izbrani zavihek."
+      ],
+      [
+        "tabs-x",
+        "Klik × zapre zavihek."
+      ],
+      [
+        "tabs-restore",
+        "Ctrl+Shift+T povrne nazadnje zaprt zavihek, v pravilnem zaporedju."
+      ],
+      [
+        "tabs-history",
+        "Zgodovina se piše v ozadju in omogoča obnovitev tudi po ponovnem zagonu programa."
+      ],
+      [
+        "tabs-path",
+        "Hover na zavihku pokaže celotno pot datoteke."
+      ],
+      [
+        "tabs-reveal",
+        "Dvoklik zavihka odpre Windows Explorer v mapi datoteke in izbere to datoteko."
+      ],
+      [
+        "tabs-drag",
+        "Zavihke lahko z levim vlekom poljubno razporediš levo in desno."
+      ],
+      [
+        "tabs-follow",
+        "Zavihek se začne premikati takoj, ko ga zagrabiš, in sledi miški."
+      ],
+      [
+        "tabs-animation",
+        "Ko zavihek povlečeš dovolj daleč, se sosednji zavihek animirano premakne na njegovo mesto."
+      ],
+      [
+        "tabs-video-icon",
+        "Video zavihek ima rdeč znak za video."
+      ],
+      [
+        "tabs-audio-icon",
+        "Zvočni zavihek ima svetlo moder znak za zvočni posnetek."
+      ],
+      [
+        "tabs-image-icon",
+        "Slikovni zavihek ima temneje moder znak za sliko."
+      ]
+    ]
+  },
+  {
+    "group": "Nastavitve in jezik",
+    "items": [
+      [
+        "settings-position",
+        "Zobnik je desno od zavihkov in levo od gumba minus."
+      ],
+      [
+        "settings-icon",
+        "Zobnik je lepo oblikovan in kompakten."
+      ],
+      [
+        "settings-shortcuts",
+        "Nastavitve vsebujejo tabelo vseh bližnjic; vsako lahko spremeniš."
+      ],
+      [
+        "settings-save",
+        "Spremenjene bližnjice in globalne nastavitve se ohranijo po ponovnem zagonu."
+      ],
+      [
+        "settings-close-icon",
+        "Nastavitve imajo lepo oblikovan × za zapiranje."
+      ],
+      [
+        "settings-outside",
+        "Klik izven menija znotraj Electron okna zapre nastavitve."
+      ],
+      [
+        "settings-height",
+        "Nastavitve segajo od vrha do dna Electron okna; drsnik oziroma scrollbar ne štrli čez vogale."
+      ],
+      [
+        "settings-flags",
+        "Čisto na vrhu nastavitev sta slovenska in angleška zastava za izbiro jezika."
+      ],
+      [
+        "settings-language",
+        "Izbira SL/EN prevede besedilo menijev in nastavitev."
+      ],
+      [
+        "settings-migration",
+        "Obstoječe privzete bližnjice se preselijo na D za hitrost, Ctrl+D za risanje in Ctrl+S za izvoz; druge ročne preslikave se ohranijo."
+      ]
+    ]
+  },
+  {
+    "group": "Rotacija in zrcaljenje",
+    "items": [
+      [
+        "rotate-types",
+        "Rotacija in zrcaljenje delujeta pri videih in slikah."
+      ],
+      [
+        "rotate-r",
+        "R pokaže dolg zgornji drsnik z vrednostjo 000.00°. Klik vrednosti ali dvoklik drsnika odpre vnos; Enter uporabi kot."
+      ],
+      [
+        "rotate-range",
+        "Drsnik ima 0° levo in 360° desno; pozitivni kot vrti v nasprotni smeri urinega kazalca."
+      ],
+      [
+        "rotate-numeric",
+        "Dvoklik drsnika odpre vnos natančne vrednosti kota v stopinjah."
+      ],
+      [
+        "mirror-y",
+        "Shift+R prezrcali sliko okoli njene izvirne osi Y."
+      ],
+      [
+        "mirror-x",
+        "Ctrl+Shift+R prezrcali sliko okoli njene izvirne osi X."
+      ],
+      [
+        "mirror-view",
+        "Zrcaljenje ohrani povečavo, translacijo, rotacijo in isti okvir prikaza."
+      ],
+      [
+        "rotate-export",
+        "Izvoz pravilno upošteva rotacijo in obe zrcaljenji skupaj z obrezom in risbami."
+      ]
+    ]
+  },
+  {
+    "group": "Risanje, barve, puščice in besedilo",
+    "items": [
+      [
+        "draw-shortcut",
+        "Ctrl+D odpre meni z orodji za risanje; D ostane za hitrost."
+      ],
+      [
+        "draw-tools",
+        "Ozek meni z ikonami razširi možnosti pod izbranim orodjem; na vrhu je sproten predogled krivulje, puščice, besedila ali radirke."
+      ],
+      [
+        "draw-freehand",
+        "Levi vlek riše prostoročne črte na posnetek."
+      ],
+      [
+        "draw-width",
+        "Premer črte je nastavljiv v izvornih pikslih."
+      ],
+      [
+        "color-wheel",
+        "HSV krog odraža trenutno svetlost V; RGB kvadrat prikazuje rez pri trenutni vrednosti B."
+      ],
+      [
+        "color-sliders",
+        "Na voljo so štirje drsniki: hue, saturation, brightness in alpha."
+      ],
+      [
+        "color-sync",
+        "Klik na barvni krog takoj posodobi prva dva drsnika in predogled barve."
+      ],
+      [
+        "color-alpha",
+        "Drsnik alpha pravilno spreminja neprosojnost risbe oziroma besedila."
+      ],
+      [
+        "color-rgba",
+        "Na vrhu lahko preklopiš barvni prostor v RGBA; barva se pri preklopu ohrani."
+      ],
+      [
+        "color-normalized",
+        "Izbereš vrednosti 0–255 ali normalizirane 0–1."
+      ],
+      [
+        "draw-undo",
+        "Ctrl+Z razveljavi zadnjo potezo oziroma besedilo."
+      ],
+      [
+        "draw-redo",
+        "Ctrl+Y ponovno uveljavi razveljavljeno potezo oziroma besedilo."
+      ],
+      [
+        "draw-tab-state",
+        "Risbe in razveljavitve pripadajo posameznemu zavihku."
+      ],
+      [
+        "draw-polyline",
+        "Shift+klik dodaja oglišča ravne lomljene črte."
+      ],
+      [
+        "draw-polyline-end",
+        "Shift+klik obstoječega oglišča zaključi lomljeno črto."
+      ],
+      [
+        "draw-angles",
+        "Ctrl+Shift+klik pri lomljeni črti omeji kote na 0°, 45°, 90° … 315°."
+      ],
+      [
+        "arrow-finish",
+        "Puščica dobi konico ob zaključku risanja."
+      ],
+      [
+        "arrow-apex",
+        "Konica je enakokraki trikotnik z vrhom natančno na zaključni točki."
+      ],
+      [
+        "arrow-direction",
+        "Prostoročna puščica oceni stabilno smer čez nastavljivo persistenčno dolžino; pri lomljeni črti smer določi zadnji segment."
+      ],
+      [
+        "arrow-size",
+        "Širino in višino trikotne konice lahko vneseš v pikslih."
+      ],
+      [
+        "text-box",
+        "Besedilo se vnaša v vodoravno škatlo s samodejno tesno višino; širina je nastavljiva, zgornji desni ročaj vrti škatlo okoli sredine."
+      ],
+      [
+        "text-size",
+        "Velikost besedila je podana v izvornih pikslih."
+      ],
+      [
+        "text-color",
+        "Besedilo uporablja enak barvni meni kot črte in puščice."
+      ],
+      [
+        "text-fonts",
+        "Ponujene pisave: Arial, Helvetica, Verdana, Consolas in Comic Sans."
+      ],
+      [
+        "draw-transforms",
+        "Risbe ostanejo na pravilnih izvornih koordinatah pri povečavi, premiku, rotaciji in zrcaljenju."
+      ],
+      [
+        "draw-export",
+        "Črte, puščice, besedilo in alpha se pravilno vključijo v izvoženo sliko oziroma video."
+      ]
+    ]
+  },
+  {
+    "group": "Prehajanje po mapi in brisanje",
+    "items": [
+      [
+        "folder-next",
+        "Ctrl+Shift+→ odpre naslednjo ustrezno datoteko v isti mapi, v istem zavihku."
+      ],
+      [
+        "folder-prev",
+        "Ctrl+Shift+← odpre prejšnjo ustrezno datoteko v isti mapi."
+      ],
+      [
+        "folder-cycle",
+        "Prehajanje deluje za slike, video in zvok ter cikla od zadnje nazaj na prvo datoteko."
+      ],
+      [
+        "folder-icon-menu",
+        "Klik znaka za vrsto datoteke v zavihku odpre meni filtrov za prehajanje po mapi."
+      ],
+      [
+        "folder-seven",
+        "Meni vsebuje vseh 7 možnosti: video, zvok, slike, video+zvok, video+slike, zvok+slike in vse tri."
+      ],
+      [
+        "folder-icons",
+        "Pri kombinaciji vrst sta na zavihku vidna dva oziroma trije znaki."
+      ],
+      [
+        "folder-filter",
+        "Prehajanje upošteva izbrane vrste in preskoči druge datoteke."
+      ],
+      [
+        "folder-drawing-confirm",
+        "Prehajanje po mapi ohrani risbe in ne zahteva dodatne potrditve."
+      ],
+      [
+        "folder-sort",
+        "V nastavitvah lahko izbereš način sortiranja datotek za prehajanje in smer razvrščanja."
+      ],
+      [
+        "delete-confirm",
+        "Delete odpre potrditev brisanja, pri čemer je privzeto izbran Da."
+      ],
+      [
+        "delete-enter",
+        "Delete in nato Enter zaporedoma potrdita brisanje; datoteka se premakne v koš."
+      ],
+      [
+        "delete-next",
+        "Po brisanju se odpre naslednja primerna datoteka, brez obstalega zavihka."
+      ]
+    ]
+  },
+  {
+    "group": "Izvoz in kakovost",
+    "items": [
+      [
+        "export-shortcut",
+        "Ctrl+S odpre izvoz; prejšnji Ctrl+M je nadomeščen."
+      ],
+      [
+        "export-five",
+        "Levi stolpec ponuja 5 ciljnih map: izvorno mapo, Prenose, Videe, Glasbo in Slike."
+      ],
+      [
+        "export-order",
+        "Med zadnjimi tremi mapami je najprej mapa za trenutno vrsto posnetka."
+      ],
+      [
+        "export-recent",
+        "Pod njimi so zadnje uporabljene ciljne mape v kronološkem vrstnem redu."
+      ],
+      [
+        "export-scroll",
+        "Seznam nedavnih map je drsljiv, ko je daljši, in se ohrani po ponovnem zagonu."
+      ],
+      [
+        "export-right",
+        "Desno v istem pojavnem meniju so nastavitve izvoza za trenutni izvoz."
+      ],
+      [
+        "export-global",
+        "Nastavitve izvoza ostanejo tudi v globalnih nastavitvah in določajo začetne vrednosti izvoza."
+      ],
+      [
+        "export-override",
+        "Sprememba v pojavnem meniju velja za ta izvoz in ne spremeni globalnih nastavitev."
+      ],
+      [
+        "export-native",
+        "Izbira ciljne mape odpre Windowsovo okno za shranjevanje v izbrani mapi."
+      ],
+      [
+        "export-defaults",
+        "Privzeti izhodni formati: video MP4, zvok MP3, slika PNG."
+      ],
+      [
+        "export-formats",
+        "V globalnih nastavitvah in meniju za izvoz lahko izbereš drug podprt izhodni format."
+      ],
+      [
+        "export-match-default",
+        "Opcija za približno enako kodiranje kot v izvirniku je privzeto vključena."
+      ],
+      [
+        "export-quality",
+        "Privzeti ponovni zapis uporablja visoko kakovost brez omejitve bitne hitrosti; droben tekst ostane berljiv. Nespremenjeno gradivo se kopira, kjer je mogoče."
+      ],
+      [
+        "export-copy",
+        "Ko je mogoče, se vsebina kopira brez ponovnega kodiranja; nespremenjen celoten posnetek v istem formatu ostane identičen."
+      ],
+      [
+        "export-precise",
+        "Ko je potrebno kodiranje, se časovni in prostorski obrez še vedno izvede natančno, brez dodatne mejne sličice."
+      ],
+      [
+        "export-combined",
+        "I/O, obrez, rotacija, zrcaljenje, črte, puščice in besedilo delujejo tudi v kombinaciji."
+      ],
+      [
+        "export-audio",
+        "Zvok se obreže po časovnem intervalu; izhod je privzeto MP3."
+      ],
+      [
+        "export-image",
+        "Slike in posamezna video sličica se izvozijo z vsemi nastavitvami obreza in risbami."
+      ],
+      [
+        "export-progress",
+        "Pri daljšem izvozu je viden napredek; aplikacija ostane odzivna."
+      ],
+      [
+        "export-source-safe",
+        "Izvoz ne prepiše izvorne datoteke."
+      ],
+      [
+        "export-size-explanation",
+        "Razlika med kopiranjem, ponovnim kodiranjem in lossless izvozom je kratko razložena v dokumentaciji."
+      ]
+    ]
+  },
+  {
+    "group": "Windows, projekt in ikona",
+    "items": [
+      [
+        "os-name",
+        "Projekt in aplikacija se imenujeta Video Audio Image Viewer."
+      ],
+      [
+        "os-logo",
+        "Ikona ima obliko YouTubovega znaka, svetlo modro ozadje in velik bel plus na sredini."
+      ],
+      [
+        "os-shortcut",
+        "V projektni mapi je bližnjica z ikono, ki jo lahko kopiraš na namizje oziroma pripneš na Start."
+      ],
+      [
+        "os-video-default",
+        "Dvoklik video datoteke v Windows Explorerju odpre ta pregledovalnik."
+      ],
+      [
+        "os-audio-default",
+        "Dvoklik zvočne datoteke v Windows Explorerju odpre ta pregledovalnik."
+      ],
+      [
+        "os-image-default",
+        "Dvoklik slikovne datoteke v Windows Explorerju odpre ta pregledovalnik, ne Windows Photos."
+      ],
+      [
+        "os-bulk-defaults",
+        "Pripravljena je skripta za paketno registracijo in nastavljanje bistvenih formatov, z dejanskim preverjanjem in jasnim sporočilom ob omejitvah Windowsa."
+      ],
+      [
+        "os-vlc-remove",
+        "VLC je odstranjen iz sistema."
+      ],
+      [
+        "os-portable",
+        "Aplikacija je prenosljiva: deluje iz projektne mape brez ločene namestitve Node.js ali FFmpeg."
+      ],
+      [
+        "os-unicode",
+        "Poti in datoteke s č, š, ž, Č, Š, Ž se pravilno odpirajo, prikazujejo in izvažajo."
+      ],
+      [
+        "os-memory",
+        "Daljše obdelave imajo napredek; poraba pomnilnika je omejena, prednostno pod 5 GB in največ 12 GB."
+      ],
+      [
+        "os-research",
+        "Raziskana je razlika med odzivnostjo YouTuba in VLC; omejitve kodekov in preskokov so pošteno opisane."
+      ]
+    ]
+  },
+  {
+    "group": "Ta pregledna stran",
+    "items": [
+      [
+        "review-all",
+        "Stran vsebuje vse zahteve iz pogovora po zadnjih sprejetih spremembah."
+      ],
+      [
+        "review-status",
+        "Vsako vrstico lahko označiš s kljukico ali križcem; začetno stanje je nepreverjeno."
+      ],
+      [
+        "review-notes",
+        "Pri zahtevku se ohranijo ločene opombe iz posameznih pregledov; Nova opomba doda naslednjo, višina polj se prilagaja besedilu."
+      ],
+      [
+        "review-add",
+        "Lahko dodaš svoje nove zahteve oziroma spremembe."
+      ],
+      [
+        "review-save",
+        "Stanja in opombe se samodejno shranjujejo ter ostanejo po zaprtju in ponovnem odprtju strani."
+      ],
+      [
+        "review-prompt",
+        "Iz izpolnjene tabele nastane naslednji prompt s popravki, opombami in novimi zahtevami."
+      ]
+    ]
+  }
+]

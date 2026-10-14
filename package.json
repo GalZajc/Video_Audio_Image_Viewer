@@ -1,0 +1,25 @@
+{
+  "name": "video-audio-image-viewer",
+  "productName": "Video Audio Image Viewer",
+  "version": "2.1.0",
+  "description": "Portable video, audio and image viewer with source-pixel annotations and precise exports",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "test:app": "electron tests/electron-smoke.js",
+    "test:formats": "electron tests/formats-smoke.js",
+    "test:restore": "electron tests/restore-smoke.js",
+    "test:refinements": "electron tests/refinements-smoke.js",
+    "build": "node scripts/build.js",
+    "test:viewer": "electron tests/viewer-smoke.js",
+    "test:review-round2": "electron tests/review-round2-smoke.js",
+    "test:review-round3": "electron tests/review-round3-smoke.js",
+    "test:review-round4": "electron tests/review-round4-smoke.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.7.0"
+  }
+}

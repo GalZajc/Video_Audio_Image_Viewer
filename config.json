@@ -1,0 +1,239 @@
+{
+  "window": {
+    "width": 1280,
+    "height": 800,
+    "minWidth": 420,
+    "minHeight": 260,
+    "transitionTimeoutMs": 1500
+  },
+  "playback": {
+    "seekSeconds": 5,
+    "speedStep": 0.1,
+    "minSpeed": 0.1,
+    "maxSpeed": 8,
+    "volumeStep": 0.05,
+    "packetIndexCodecs": [
+      "h264",
+      "hevc",
+      "vp8",
+      "vp9",
+      "av1"
+    ],
+    "nativeAudioCodecs": [
+      "aac",
+      "mp3",
+      "opus",
+      "vorbis",
+      "flac",
+      "pcm_s16le",
+      "pcm_s24le",
+      "pcm_s32le",
+      "pcm_u8",
+      "pcm_f32le"
+    ]
+  },
+  "view": {
+    "zoomFactor": 1.18,
+    "minZoom": 0.05,
+    "maxZoom": 512,
+    "cropHitPixels": 9,
+    "cropInitialFraction": 0.8,
+    "controlsHideMs": 1800,
+    "tabDragThreshold": 5,
+    "windowFitTolerance": 1,
+    "tabAnimationMs": 150,
+    "pivotHitPixels": 12,
+    "tabDragPreviewWidth": 360,
+    "tabDragPreviewIntervalMs": 16
+  },
+  "storage": {
+    "closedTabs": 500,
+    "historyEntries": 5000,
+    "maxFrameIndexBytes": 134217728,
+    "maxProxyCacheBytes": 4294967296,
+    "recentFolders": 30,
+    "maxImagePixels": 80000000,
+    "maxSubtitleBytes": 8388608,
+    "maxThumbnailCacheBytes": 104857600
+  },
+  "export": {
+    "videoFormat": "mp4",
+    "audioFormat": "mp3",
+    "videoCRF": 0,
+    "preset": "medium",
+    "audioQuality": 0,
+    "threads": 4,
+    "imageFormat": "png",
+    "matchSource": true,
+    "balancedCRF": 14,
+    "maxCRF": 16,
+    "minCRF": 10,
+    "openAfterExport": true,
+    "audioBitrate": 192000
+  },
+  "proxy": {
+    "crf": 18,
+    "preset": "veryfast",
+    "keyframeSeconds": 1,
+    "threads": 4
+  },
+  "tools": {
+    "ffmpeg": "",
+    "ffprobe": ""
+  },
+  "shortcuts": {
+    "playPause": "Space",
+    "seekBack": "ArrowLeft",
+    "seekForward": "ArrowRight",
+    "frameBack": "Comma",
+    "frameForward": "Period",
+    "slower": "KeyS",
+    "faster": "KeyD",
+    "markIn": "KeyI",
+    "markOut": "KeyO",
+    "crop": "Shift+KeyS",
+    "escape": "Escape",
+    "escapeExpand": "Shift+Escape",
+    "export": "Ctrl+KeyS",
+    "open": "Ctrl+KeyO",
+    "newTab": "Ctrl+KeyT",
+    "closeTab": "Ctrl+KeyW",
+    "restoreTab": "Ctrl+Shift+KeyT",
+    "nextTab": "Ctrl+Tab",
+    "previousTab": "Ctrl+Shift+Tab",
+    "settings": "Ctrl+Comma",
+    "fillWindow": "KeyF",
+    "fullscreen": "F11",
+    "volumeUp": "ArrowUp",
+    "volumeDown": "ArrowDown",
+    "mute": "KeyM",
+    "resetView": "Alt+KeyR",
+    "clearSelection": "Ctrl+Backspace",
+    "rotate": "KeyR",
+    "flipHorizontal": "Shift+KeyR",
+    "flipVertical": "Ctrl+Shift+KeyR",
+    "draw": "Ctrl+KeyD",
+    "undo": "Ctrl+KeyZ",
+    "redo": "Ctrl+KeyY",
+    "folderPrevious": "Ctrl+Shift+ArrowLeft",
+    "folderNext": "Ctrl+Shift+ArrowRight",
+    "deleteFile": "Delete",
+    "exitDrawing": "Escape+Digit1",
+    "exitRotation": "Escape+Digit2",
+    "exitCrop": "Escape+Digit3",
+    "centerView": "Escape+Digit4",
+    "zeroRotation": "Escape+Digit5",
+    "shrinkWindow": "Escape+Digit6",
+    "maxWindow": "Escape+Digit7",
+    "subtitles": "KeyC",
+    "timelinePreview": "KeyP"
+  },
+  "mediaTypes": {
+    "video": [
+      "mp4",
+      "mkv",
+      "webm",
+      "mov",
+      "avi",
+      "m4v",
+      "mts",
+      "m2ts",
+      "ts",
+      "wmv",
+      "flv",
+      "mpg",
+      "mpeg",
+      "ogv",
+      "3gp",
+      "gif"
+    ],
+    "audio": [
+      "mp3",
+      "m4a",
+      "aac",
+      "flac",
+      "wav",
+      "ogg",
+      "opus",
+      "aiff",
+      "aif",
+      "wma"
+    ],
+    "image": [
+      "png",
+      "jpg",
+      "jpeg",
+      "webp",
+      "bmp",
+      "tif",
+      "tiff",
+      "avif",
+      "ico",
+      "svg"
+    ]
+  },
+  "preferences": {
+    "language": "sl",
+    "folderSort": "name",
+    "folderDescending": false,
+    "escapeMaxFit": false,
+    "backgroundColor": "#000000ff",
+    "timelinePreviewEnabled": true,
+    "timelinePreviewWidth": 256,
+    "timelinePreviewHeight": 144
+  },
+  "associations": {
+    "excluded": [
+      "svg"
+    ]
+  },
+  "review": {
+    "port": 41837,
+    "maxScreenshotBytes": 12582912,
+    "maxBodyBytes": 1048576,
+    "maxNotesLength": 20000,
+    "saveDelayMs": 350
+  },
+  "drawing": {
+    "width": 4,
+    "hue": 0,
+    "saturation": 1,
+    "brightness": 1,
+    "alpha": 1,
+    "mode": "hsv",
+    "normalized": false,
+    "arrow": false,
+    "arrowWidth": 18,
+    "arrowHeight": 24,
+    "vertexHitPixels": 9,
+    "maxPoints": 1000000,
+    "font": "Arial",
+    "fontSize": 24,
+    "textBoxWidth": 240,
+    "textBoxHeight": 120,
+    "bold": false,
+    "italic": false,
+    "eraserPreview": false,
+    "arrowPersistence": 64
+  },
+  "preview": {
+    "quantizeSeconds": 0.25,
+    "cacheEntries": 96,
+    "jpegQuality": 4,
+    "storyboardFrames": 128,
+    "storyboardWidth": 320,
+    "maxFrames": 256,
+    "seekTimeoutMs": 4000,
+    "warmDelayMs": 15,
+    "storedSources": 4
+  },
+  "subtitles": {
+    "extensions": [
+      "srt",
+      "vtt",
+      "ass",
+      "ssa"
+    ],
+    "cacheEntries": 16
+  }
+}

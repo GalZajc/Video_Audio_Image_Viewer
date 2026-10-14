@@ -1,0 +1,10 @@
+'use strict';
+const {app}=require('electron');const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(process.argv[2]);process.env.VAP_ROOT=root;process.env.VAP_TEST_MODE='1';
+const expected=JSON.parse(fs.readFileSync(path.join(root,'DATA','history.json'),'utf8'));
+const {getWindow}=require('../main');const pause=ms=>new Promise(r=>setTimeout(r,ms));
+app.whenReady().then(async()=>{try{let win;while(!(win=getWindow()))await pause(30);const web=win.webContents;let ready=false;for(let i=0;i<400;i++){ready=await web.executeJavaScript('typeof config!=="undefined" && !!config && !restoring && loaded');if(ready)break;await pause(30);}assert.ok(ready);
+  const actual=await web.executeJavaScript('({tabs:tabs.map(serial),closed,active,paused:video.paused,shortcut:settings.shortcuts.playPause})');assert.equal(actual.tabs.length,expected.tabs.length);assert.deepEqual(actual.tabs.map(x=>x.path),expected.tabs.map(x=>x.path));assert.deepEqual(actual.tabs[0].crop,expected.tabs[0].crop);assert.equal(actual.paused,true);assert.equal(actual.shortcut,'KeyP');
+  await web.executeJavaScript(`activate(0)`);for(let i=0;i<400;i++){if(await web.executeJavaScript('loaded && !video.seeking && video.readyState>=2'))break;await pause(30);}const position=await web.executeJavaScript('video.currentTime');assert.ok(Math.abs(position-expected.tabs[0].time)<.02);
+  fs.writeFileSync(path.join(root,'restore-report.json'),JSON.stringify({success:true,restoredTabs:actual.tabs.length,position},null,2),'utf8');console.log('Restart restoration passed.');app.quit();
+}catch(e){console.error(e);app.exit(1);}});

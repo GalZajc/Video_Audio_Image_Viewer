@@ -1,0 +1,11 @@
+node_modules/
+app/
+DATA/
+OUTPUT/
+*.log
+bin/*.exe
+*.lnk
+Test files/
+scripts/finish-review-edits.js
+scripts/review-source-edits.js
+scripts/update-review-docs.js

@@ -1,0 +1,4 @@
+ 'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),Captions=require('../caption-parser'),V=require('../visual');
+test('WebVTT captions preserve Unicode, multiline text, timing and safe plain text',()=>{const cues=Captions.parse('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.500 align:center\n<b>Čšž</b> &amp; ŽŠČ\nsecond line\n\n00:03.000 --> 00:04.000\nnext\n');assert.deepEqual(cues,[{start:1,end:2.5,text:'Čšž & ŽŠČ\nsecond line'},{start:3,end:4,text:'next'}]);});
+test('open arrow outer apex is exactly the selected endpoint and legs match stroke thickness',()=>{const stroke={points:[{x:20,y:50},{x:160,y:50}],width:4,arrowWidth:40,arrowHeight:30,polyline:true};const h=V.arrowHead(stroke);assert.deepEqual(h.tip,stroke.points.at(-1));assert.ok(Math.abs(Math.hypot(h.left.x-h.leftInner.x,h.left.y-h.leftInner.y)-stroke.width)<1e-8);assert.ok(Math.abs(Math.hypot(h.right.x-h.rightInner.x,h.right.y-h.rightInner.y)-stroke.width)<1e-8);});

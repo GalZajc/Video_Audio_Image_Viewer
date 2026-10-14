@@ -1,0 +1,6 @@
+Bundled FFmpeg and FFprobe: 8.1.2 full build from https://www.gyan.dev/ffmpeg/builds/
+Build metadata: ffmpeg.exe -version
+Upstream source and corresponding release: https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz
+Upstream repository: https://git.ffmpeg.org/ffmpeg.git
+Build configuration, dependency information and source references: https://www.gyan.dev/ffmpeg/builds/
+License: GPL version 3 or later, as stated in FFmpeg-LICENSE.txt and in the executable build configuration.

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' media:; img-src 'self' data: media:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' media:">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Video Audio Image Viewer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="titlebar">
+    <div id="tabs" role="tablist"></div>
+    <div id="titleDrag"></div>
+    <button id="settingsButton" title="Nastavitve" aria-label="Nastavitve"><img src="assets/settings.svg" alt=""></button>
+    <div id="windowButtons">
+      <button id="minimize" aria-label="Pomanjšaj"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+      <button id="maximize" aria-label="Povečaj"><svg viewBox="0 0 12 12"><path d="M2 2h8v8H2Z"/></svg></button>
+      <button id="closeWindow" aria-label="Zapri"><svg viewBox="0 0 12 12"><path d="m2 2 8 8m0-8-8 8"/></svg></button>
+    </div>
+  </header>
+  <main id="stage">
+    <video id="video" preload="auto" playsinline crossorigin="anonymous"></video>
+    <canvas id="still"></canvas>
+    <img id="image" crossorigin="anonymous" alt="">
+    <canvas id="drawingLayer"></canvas>
+    <canvas id="raster"></canvas>
+    <div id="rotationPanel" hidden><input id="rotationSlider" type="range" min="0" max="360" step="0.01" value="0" aria-label="Rotation"><output id="rotationValue">0°</output></div>
+    <div id="rotationPivot" hidden><svg viewBox="0 0 24 24"><path d="M3 12H21M12 3V21"/></svg></div><canvas id="eraserCursor" hidden></canvas><div id="inlineText" hidden><textarea id="inlineTextContent" spellcheck="false" aria-label="Besedilo na sliki"></textarea><span id="textRotateHandle" title="Vrti besedilo / Rotate text"></span><span id="textWidthHandle"></span></div>
+    <div id="timelinePreview" hidden><img id="timelinePreviewImage" alt=""><span id="timelinePreviewTime"></span></div><div id="cropOverlay"></div>
+    <div id="empty"><img src="assets/icon.svg" alt=""><p>Video Audio Image Viewer</p><span data-sl="Ctrl + O · odpri datoteko&#10;Povleci video, zvok ali sliko v okno" data-en="Ctrl + O · open a file&#10;Drop a video, audio or image here"></span></div>
+    <div id="audioLabel"><span>♫</span><p></p></div>
+    <div id="zoomReadout"></div><div id="captions" hidden></div>
+    <div id="toast" role="status"></div>
+    <div id="job"><span></span><progress max="1" value="0"></progress></div>
+    <div id="transport">
+      <div id="readout"><span id="time"></span><span id="selection"></span><span id="rate"></span></div>
+      <div id="timeline" role="slider" aria-label="Časovnica" tabindex="0"><div id="track"><div id="elapsed"></div><div id="interval"></div><i id="inMarker"></i><i id="outMarker"></i><b id="playhead"></b></div><div id="timelineTip"></div></div>
+    </div>
+  </main>
+  <dialog id="settings">
+    <div class="languages"><button id="languageSl" title="Slovenščina"><img src="assets/sl.svg" alt="Slovenščina"></button><button id="languageEn" title="English"><img src="assets/en.svg" alt="English"></button><button id="closeSettings" class="dialogClose" aria-label="Close"><svg viewBox="0 0 16 16"><path d="m4 4 8 8m0-8-8 8"/></svg></button></div>
+    <div class="formats"><label><span data-sl="Video" data-en="Video"></span><select id="videoFormat"><option>mp4</option><option>mkv</option><option>webm</option><option>mov</option></select></label><label><span data-sl="Zvok" data-en="Audio"></span><select id="audioFormat"><option>mp3</option><option>flac</option><option>wav</option><option>m4a</option><option>ogg</option></select></label><label><span data-sl="Slika" data-en="Image"></span><select id="imageFormat"><option>png</option><option>jpg</option><option>webp</option></select></label></div>
+    <p><label><input id="matchSource" type="checkbox"> <span data-sl="Kakovost in velikost, podobni izvirniku" data-en="Quality and size similar to the source"></span></label></p>
+    <p><label><input id="openAfterExport" type="checkbox"> <span data-sl="Po izvozu odpri izrezek" data-en="Open the exported file"></span></label></p>
+    <p><label><input id="escapeMaxFit" type="checkbox"> <span data-sl="Esc: dodatni korak za največje centrirano okno" data-en="Esc: additional step to maximize and center the fitted window"></span></label></p>
+    <p class="backgroundSetting"><span data-sl="Ozadje pri rotaciji" data-en="Rotation background"></span><button id="backgroundColor" class="swatch" aria-label="Background color"></button></p>
+    <p class="hint" data-sl="Izklop: brezizgubno kodiranje videa; datoteke so lahko bistveno večje." data-en="Off: lossless video encoding; files can be substantially larger."></p>
+    <div class="formats"><label><span data-sl="Vrstni red v mapi" data-en="Folder order"></span><select id="folderSort"><option value="name" data-sl="Ime" data-en="Name"></option><option value="modified" data-sl="Datum spremembe" data-en="Modified date"></option><option value="created" data-sl="Datum nastanka" data-en="Created date"></option><option value="size" data-sl="Velikost" data-en="Size"></option></select></label><label><input id="folderDescending" type="checkbox"><span data-sl="Padajoče" data-en="Descending"></span></label></div>
+    <p class="hint" data-sl="Klikni bližnjico in pritisni novo kombinacijo. Esc prekliče spremembo. Nastavitve se shranijo samodejno." data-en="Click a shortcut and press a new combination. Esc cancels. Changes save automatically."></p>
+    <table><thead><tr><th data-sl="Dejanje" data-en="Action"></th><th data-sl="Bližnjica" data-en="Shortcut"></th></tr></thead><tbody id="shortcutRows"></tbody></table>
+    <div class="previewSettings"><label><input id="previewEnabled" type="checkbox"><span data-sl="Predogled prizora na časovnici (P)" data-en="Timeline frame preview (P)"></span></label><label><span data-sl="Velikost predogleda" data-en="Preview size"></span><input id="previewWidth" type="number" min="80" max="640"> × <input id="previewHeight" type="number" min="80" max="640"> px</label></div>
+    <p class="hint" data-sl="Miška: dvoklik — cel zaslon; vlek zavihka — vrstni red; dvoklik zavihka — pokaži datoteko. Ctrl + kolešček — povečava ob kazalcu; Ctrl + levi vlek — premik. Shift + klik — lomljena črta; Ctrl + Shift + klik — koti po 45°. Klik obstoječega oglišča zaključi črto." data-en="Mouse: double-click — fullscreen; drag a tab — reorder; double-click a tab — reveal file. Ctrl + wheel — zoom at cursor; Ctrl + left drag — pan. Shift + click — polyline; Ctrl + Shift + click — 45° steps. Click an existing vertex to finish."></p>
+  </dialog>
+  <dialog id="rotationInput" class="smallDialog"><form method="dialog"><label><span data-sl="Kot v stopinjah, v nasprotni smeri urinega kazalca" data-en="Angle in degrees, counterclockwise"></span><input id="angleInput" type="number" step="any"></label><div class="dialogActions"><button value="cancel" type="button" id="cancelAngle" data-sl="Prekliči" data-en="Cancel"></button><button value="apply" type="submit" data-sl="Uporabi" data-en="Apply"></button></div></form></dialog>
+  <div id="typeMenu" class="popup" hidden></div>
+  <dialog id="exportMenu" class="smallDialog"><div class="dialogTitle" data-sl="Mapa za shranjevanje" data-en="Save location"></div><div class="exportColumns"><div><div id="exportChoices"></div><div class="hint" data-sl="Zadnje uporabljene mape" data-en="Recent folders"></div><div id="recentFolders"></div></div><div class="exportSettings"><label><span data-sl="Video" data-en="Video"></span><select id="exportVideo"><option>mp4</option><option>mkv</option><option>webm</option><option>mov</option></select></label><label><span data-sl="Zvok" data-en="Audio"></span><select id="exportAudio"><option>mp3</option><option>flac</option><option>wav</option><option>m4a</option><option>ogg</option></select></label><label><span data-sl="Slika" data-en="Image"></span><select id="exportImage"><option>png</option><option>jpg</option><option>webp</option></select></label><label><input id="exportQuality" type="checkbox"><span data-sl="Podobno izvirniku" data-en="Similar to source"></span></label><p class="hint" data-sl="Te vrednosti veljajo za ta izvoz. Privzete vrednosti spremeniš v nastavitvah." data-en="These values apply to this export. Change defaults in Settings."></p></div></div></dialog>
+  <dialog id="textInput" class="smallDialog"><form method="dialog"><div class="dialogTitle" data-sl="Besedilo" data-en="Text"></div><textarea id="textContent" rows="5" spellcheck="false"></textarea><div class="dialogActions"><button value="cancel" data-sl="Prekliči" data-en="Cancel"></button><button value="apply" data-sl="Dodaj" data-en="Add"></button></div></form></dialog>
+  <div id="drawPanel" class="popup" hidden>
+    <div class="drawTitle"><span></span><button id="closeDraw" class="dialogClose" aria-label="Close drawing">×</button></div>
+    <canvas id="toolPreview" width="176" height="100"></canvas>
+    <select id="drawTool" hidden><option value="line">Line</option><option value="arrow">Arrow</option><option value="arrowOpen">Open arrow</option><option value="text">Text</option><option value="eraser">Eraser</option></select>
+    <div class="toolRow" data-tool="line"><button class="toolIcon" title="Krivulja" aria-label="Pencil"><svg viewBox="0 0 20 20"><path d="M2 14C2 2 9 2 8 10S16 18 17 4"/></svg></button><div class="toolOptions"><button class="swatch" data-color="line" aria-label="Pencil color"></button><div class="parameter" data-key="width" data-label-sl="Debelina (px)" data-label-en="Width (px)"><input id="penWidth" type="number" min="0.1" max="10000" step="0.1"></div></div></div>
+    <div class="toolRow" data-tool="arrow"><button class="toolIcon" title="Polna puščica" aria-label="Arrow"><svg viewBox="0 0 20 20"><path d="M2 15C2 5 8 4 8 11S14 17 14 8"/><path d="M14 2L10 9H18Z" fill="currentColor"/></svg></button><div class="toolOptions"><button class="swatch" data-color="arrow" aria-label="Arrow color"></button><div class="parameter" data-key="arrowLineWidth" data-label-sl="Debelina (px)" data-label-en="Width (px)"><input id="arrowLineWidth" type="number" min="0.1" max="10000" step="0.1"></div><div id="arrowOptions"><div class="parameter" data-key="arrowWidth" data-label-sl="Širina konice (px)" data-label-en="Head width (px)"><input id="arrowWidth" type="number" min="0.1" max="10000" step="0.1"></div><div class="parameter" data-key="arrowHeight" data-label-sl="Dolžina konice (px)" data-label-en="Head length (px)"><input id="arrowHeight" type="number" min="0.1" max="10000" step="0.1"></div><div class="parameter" data-key="arrowPersistence" data-label-sl="Persistenčna dolžina (px)" data-label-en="Persistence length (px)"><input id="arrowPersistence" type="number" min="0.1" max="10000" step="0.1"></div></div></div></div>
+    <div class="toolRow" data-tool="arrowOpen"><button class="toolIcon" title="Odprta puščica" aria-label="Open arrow"><svg viewBox="0 0 20 20"><path d="M2 16C2 4 8 4 8 11S13 17 14 8M10 9L14 2L18 9"/></svg></button><div class="toolOptions"><button class="swatch" data-color="arrowOpen" aria-label="Open arrow color"></button><div id="openArrowParameters"></div></div></div>
+    <div class="toolRow" data-tool="text"><button class="toolIcon" title="Besedilo" aria-label="Text"><svg viewBox="0 0 20 20"><path d="M3 17L10 3L17 17M6 12H14"/></svg></button><div class="toolOptions"><button class="swatch" data-color="text" aria-label="Text color"></button><div id="textOptions"><div class="parameter" data-key="fontSize" data-label-sl="Velikost (px)" data-label-en="Size (px)"><input id="fontSize" type="number" min="1" max="10000"></div><select id="fontFamily"><option>Arial</option><option>Helvetica</option><option>Verdana</option><option>Consolas</option><option>Comic Sans MS</option></select><div class="styleButtons"><button id="textBold" class="textStyle" title="Krepko" aria-label="Krepko"><b>B</b></button><button id="textItalic" class="textStyle" title="Ležeče" aria-label="Ležeče"><i>I</i></button></div></div></div></div>
+    <div class="toolRow" data-tool="eraser"><button class="toolIcon" title="Radirka" aria-label="Eraser"><svg viewBox="0 0 20 20"><path d="m3 12 8-9 6 5-8 9H7zM7 8l6 5M9 17h8"/></svg></button><div class="toolOptions"><div class="parameter" data-key="eraserWidth" data-label-sl="Premer (px)" data-label-en="Diameter (px)"><input id="eraserWidth" type="number" min="0.1" max="10000" step="0.1"></div><button id="eraserPreview" class="textStyle" title="Predogled radiranja" aria-label="Predogled radiranja"><svg viewBox="0 0 20 20"><path d="M2 10Q10 1 18 10Q10 19 2 10Z"/><circle cx="10" cy="10" r="3"/></svg></button></div></div>
+  </div>
+  <dialog id="parameterRange" class="smallDialog"><form method="dialog"><div id="parameterRangeTitle"></div><label><span data-sl="Od" data-en="From"></span> <input id="parameterMin" type="number" step="any"></label><label><span data-sl="Do" data-en="To"></span> <input id="parameterMax" type="number" step="any"></label><div class="dialogActions"><button id="cancelParameterRange" type="button" data-sl="Prekliči" data-en="Cancel"></button><button type="submit" value="apply" data-sl="Uporabi" data-en="Apply"></button></div></form></dialog>
+  <dialog id="colorPanel" class="smallDialog"><div class="drawTitle"><div class="drawOptions"><select id="colorMode"><option value="hsv">HSVA</option><option value="rgb">RGBA</option></select><select id="colorUnits"><option value="byte">0–255</option><option value="normalized">0–1</option></select><span id="colorPreview"></span></div><button id="closeColor" class="dialogClose">×</button></div>
+    <canvas id="colorWheel" width="180" height="180"></canvas>
+    <div id="colorSliders"></div>
+  </dialog>
+  <dialog id="choiceDialog" class="smallDialog"><form method="dialog"><div id="choiceTitle" class="dialogTitle"></div><p id="choiceDetail"></p><div id="choiceButtons" class="dialogActions"></div></form></dialog>
+  <script src="caption-parser.js"></script>
+  <script src="core.js"></script>
+  <script src="visual.js"></script>
+  <script src="raster-renderer.js"></script>
+  <script src="renderer.js"></script>
+  <script src="viewer-ui.js"></script>
+  <script src="editor-panels.js"></script>
+  <script src="interaction-refinements.js"></script>
+  <script src="windows-ui.js"></script>
+  <script src="media-overlays.js"></script>
+  <script src="drawing-palette.js"></script>
+</body>
+</html>

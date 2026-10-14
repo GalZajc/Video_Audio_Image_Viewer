@@ -1,0 +1,46 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=blue}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\begin{document}
+\section*{Video Audio Image Viewer: odzivnost predvajanja in natančen izrez}
+
+Namen aplikacije je združiti hitro upravljanje lokalnih posnetkov, kompaktne zavihke ter en časovni in prostorski izrez. Uporabniški vmesnik uporablja bližnjice, ne dodatne orodne vrstice. Poročilo povzema raziskavo in preverjanje izvedbe na Windows x64 dne 12. oktobra 2026.
+
+\subsection*{Zakaj se lahko VLC in YouTube odzivata različno}
+
+YouTube v brskalniku uporablja HTML5 video in vnaprej pripravljene kodirane različice posnetkov. Google opisuje povezavo med prilagodljivim pretakanjem, kodekom VP9 in zmanjšanjem medpomnjenja v svoji \href{https://developers.google.com/media/pdf/Youtube-HTML5-VP9-Case-Study.pdf}{študiji HTML5 in VP9}. Odzivnost zato ni lastnost samih gumbov predvajalnika: odvisna je tudi od kodiranja, medpomnilnika in strojnega dekodiranja.
+
+Pri preskoku v stisnjenem videu dekoder praviloma začne pri predhodni ključni sličici in izračuna nadaljnje sličice do cilja. Daljši razmiki med ključnimi sličicami povečajo potrebno delo. \href{https://ffmpeg.org/ffmpeg.html}{Dokumentacija FFmpeg} opisuje razliko med natančnim iskanjem in kopiranjem stisnjenega toka. \href{https://github.com/videolan/vlc/blob/master/doc/clock.md}{VideoLANov opis časovne sinhronizacije} obravnava dodatne omejitve predvajalnikove ure in sinhronizacije zvoka ter slike. To so možni vzroki uporabnikovega opažanja; iste datoteke v njegovem VLC nismo merili, zato posameznega vzroka ne moremo potrditi.
+
+\subsection*{Izbrana izvedba}
+
+Electron omogoča uporabo Chromiumovega medijskega pogona, ki ga uporablja tudi YouTube v Chromu. Sprememba hitrosti nastavi \texttt{playbackRate} istega odprtega video elementa. Preskok spremeni njegov trenutni čas, ne odpre novega predvajalnika. Lokalni protokol podpira branje posameznih območij datoteke; celoten posnetek se ne naloži v pomnilnik. Nezdružljivi posnetki dobijo lokalno predogledno kopijo, izvoz pa vedno uporablja izvirnik.
+
+Oznaki I in O uporabljata dejanske časovne oznake sličic. Med predvajanjem \href{https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback}{requestVideoFrameCallback} sporoča čas sličice, poslane v prikaz. Indeks FFprobe omogoča izbiro prejšnje in naslednje sličice tudi pri spremenljivem razmiku med sličicami. I označi začetek prve vključene sličice, O pa vključuje izbrano končno sličico do začetka naslednje. Pri zvoku oznaki predstavljata časovni meji.
+
+Med premorom se sličica prikaže na platnu brez interpolacije. Povečava ohrani izvorno koordinato pod kazalcem. Obrez se hrani v celih izvornih pikslih, njegov moder rob in črna maska z neprosojnostjo 0,58 pa se izrišeta z isto transformacijo kot slika. Tako premik in povečava ne spremenita izbranega obreza.
+
+\subsection*{Ohranitev podatkov pri izvozu}
+
+Celoten neobrezan posnetek se kopira brez ponovnega kodiranja, kadar izbrani vsebnik podpira izvorne kodeke. Poljuben natančen rez in prostorski obrez zahtevata dekodiranje slike. Privzeti MP4 pri ponovnem kodiranju uporablja H.264 z ocenjeno kakovostjo in omejitvijo bitne hitrosti glede na izvirnik. Izbirni brezizgubni način uporablja CRF 0. Pri obrezu, ki poseže v posamezne vzorce barvne podmreže, se barve pred obrezom razširijo v format 4:4:4; s tem se ohranijo zahtevane lihe koordinate in dimenzije. Rezultati brezizgubnega načina so lahko bistveno večji od izvirnika, nekateri predvajalniki pa tega profila ne podpirajo.
+
+Privzeti MP3 in pri časovnem rezu tudi AAC ponovno kodirata zvok. FLAC, WAV in izbirni M4A z ALAC omogočajo brezizgubno shranjevanje dekodiranega zvoka. Če sta oznaki I in O na isti sličici, se shrani PNG z nastavljenim prostorskim obrezom. Hitrost predvajanja ne spreminja hitrosti izvoženega posnetka. Za vsak izvoz se v mapi OUTPUT shranijo parametri, izvor, časovni meji, obrez in dejanski argumenti FFmpeg.
+
+\subsection*{Preverjanje in praktične meje}
+
+Samodejni preizkusi primerjajo zgoščene vrednosti vseh dekodiranih sličic izreza z referenčnim izrezom izvirnika. Potrdili so vključitev obeh mejnih sličic, enakost pikslov pri sodem obrezu in pri lihem obrezu po potrebni razširitvi barvne podmreže, ohranitev sličic pri spremenljivi hitrosti, kopiranje neobrezanega toka in izvoz MP3. Preverjene so tudi poti s č, š in ž, bližnjice, obnova zavihkov, shranjevanje nastavitev, povečava ob kazalcu in neodvisnost zapolnitve okna od sistemskega celega zaslona.
+
+Na testnem posnetku H.264 z ločljivostjo $640\times360$, hitrostjo 24 sličic na sekundo in desetsekundnim razmikom med ključnimi sličicami je dogodek \texttt{seeked} po petsekundnem preskoku nastopil v približno 50 do 70 ms. Meritev ne vključuje neodvisnega opazovanja osvežitve zaslona. Skupni delovni pomnilnik procesov aplikacije je bil pri tem preizkusu približno 600 MB. Rezultati veljajo za opisani test in računalnik; ne zagotavljajo enake odzivnosti pri vseh kodekih, velikostih posnetkov ali grafičnih gonilnikih. Aplikacija uporablja isti osnovni brskalnikov pogon, ne YouTubove zasebne kode.
+
+
+\section*{Nadgradnja pregledovalnika}
+Pregledovalnik podpira slike brez časovnice, rotacijo v nasprotni smeri urinega kazalca in zrcaljenje v izvornih oseh pred rotacijo. Risbe, puščice in besedilo so definirani v izvornih pikslih in se pri izvozu vključijo pred obrezom ter geometrijskimi preslikavami. Tipka D odpre risanje, R rotacijo, Ctrl+S izvoz. Izvozni meni omogoča izbiro mape in začasno preglasitev globalnih nastavitev. Privzeto ponovno kodiranje oceni kakovost in bitno hitrost iz izvirnika; brezizgubni način je izbiren. Nespremenjeni združljivi tokovi se še vedno neposredno kopirajo. Zavihki imajo animiran vlek in izbor sedmih kombinacij medijskih vrst za prehajanje po mapi. Brisanje zahteva potrditev in uporablja koš. Preverjanje na Windowsu je potrdilo vse geometrijske preslikave, vključene mejne sličice, PNG izvoz slike z risbo, MP4 izvoz rotiranega obreza z risbo, besedilo s slovenskimi znaki, razveljavitev in ponovitev, prehajanje po mapi in obnovitev uporabniških nastavitev. Paketno povezovanje datotek uporablja podpisani SetUserFTA 1.8.3; zaradi njegovega odpiranja imen seznamov z ANSI API je potreben relativni ASCII naziv z ohranjeno Unicode delovno mapo. Windowsov AssocQueryString je po nastavitvi potrdil vseh 36 končnic.
+\end{document}
