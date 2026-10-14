@@ -13,22 +13,23 @@ const processes=new Set();
 const indexTasks=new Map();
 const mediaById=new Map();
 function tool(name){const local=path.join(__dirname,'bin',name+(process.platform==='win32'?'.exe':''));return config.tools[name] || (fs.existsSync(local)?local:name);}
-function run(name,args,{progress,duration,stdoutLimit=8*1024*1024}={}) {
+function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false}={}) {
   return new Promise((resolve,reject)=>{
     const child=spawn(tool(name),args,{windowsHide:true});processes.add(child);
-    let output='',error='',carry='';
+    let output='',error='',carry='',chunks=[],bytes=0;
     child.stdout.on('data',chunk=>{
       if(progress){carry+=chunk.toString();const lines=carry.split('\n');carry=lines.pop();for(const line of lines){const m=/^out_time_us=(\d+)/.exec(line);if(m)progress(Math.min(.999,Number(m[1])/1e6/Math.max(duration,.001)));}}
-      else {output+=chunk.toString();if(output.length>stdoutLimit){child.kill();reject(new Error('Odgovor orodja je prevelik.'));}}
+      else if(binary){bytes+=chunk.length;if(bytes>stdoutLimit){child.kill();reject(new Error('Tool output is too large.'));}else chunks.push(chunk);}else {output+=chunk.toString();if(output.length>stdoutLimit){child.kill();reject(new Error('Odgovor orodja je prevelik.'));}}
     });
     child.stderr.on('data',chunk=>{error=(error+chunk.toString()).slice(-16000);});
     child.on('error',e=>{processes.delete(child);reject(new Error(`${name}: ${e.message}`));});
-    child.on('close',code=>{processes.delete(child);code===0?resolve(output):reject(new Error(error || `${name} se je končal (${code}).`));});
+    child.on('close',code=>{processes.delete(child);code===0?resolve(binary?Buffer.concat(chunks):output):reject(new Error(error || `${name} se je končal (${code}).`));});
   });
 }
 function parseRate(value){const [a,b]=String(value||'0/1').split('/').map(Number);return a/(b||1);}
 async function describe(file){
   file=path.resolve(file);const stat=await fs.promises.stat(file);if(!stat.isFile())throw new Error('Izberi datoteko.');
+  const known=[...mediaById.values()].find(meta=>meta.path===file&&meta.size===stat.size&&meta.mtime===stat.mtimeMs);if(known)return known;
   const isImage=config.mediaTypes.image.includes(path.extname(file).slice(1).toLowerCase());
   let json;
   if(path.extname(file).toLowerCase()==='.svg'){

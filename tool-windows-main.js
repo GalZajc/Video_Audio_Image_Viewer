@@ -1,6 +1,6 @@
 'use strict';
 const {BrowserWindow}=require('electron'),fs=require('node:fs'),path=require('node:path');
-module.exports=function({ipcMain,screen,defaults,contextFor,data,getSettings}){
+module.exports=function({ipcMain,screen,defaults,contextFor,data,getSettings,getHeldDrawing}){
  const windows=new Map(),snapshots=new Map(),file=path.join(data,'tool-windows.json');let owner=null,snapshot=null,bounds={},sharedOptions=null,linked=false,stopping=false;
  const copy=value=>JSON.parse(JSON.stringify(value));
  try{bounds=JSON.parse(fs.readFileSync(file,'utf8'));}catch{}
@@ -17,7 +17,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,data,getSettings}){
   win.loadFile(path.join(__dirname,'tool-windows.html'),{query:{kind}}).then(()=>{if(win.isDestroyed())return;if(snapshot)win.webContents.send('drawing-tool-state',snapshot);if(snapshot?.visible&&process.env.VAP_TEST_MODE!=='1'){win.showInactive();win.moveTop();}}).catch(error=>{if(!win.isDestroyed())console.error(error.message);});return win;
  }
  function apply(ctx,value){
-  if(ctx.window.isDestroyed()||ctx.temporary)return;owner=ctx;linked=!!getSettings()?.linkDrawingTools;
+  if(ctx.window.isDestroyed()||ctx.temporary)return;const held=getHeldDrawing?.();if(held&&held.source===ctx&&held.tab.instanceId!==value.tabId){value={...value,tabId:held.tab.instanceId,visible:!!held.tab.drawActive&&!held.tab.path.match(/\.(mp3|wav|flac|m4a|ogg)$/i),options:held.tab.toolOptions||snapshot?.options||value.options};}owner=ctx;linked=!!getSettings()?.linkDrawingTools;
   if(linked&&!sharedOptions)sharedOptions=copy(value.options);
   snapshot={...value,options:copy(linked?sharedOptions:value.options),ownerId:ctx.window.webContents.id};
   if(linked&&JSON.stringify(value.options)!==JSON.stringify(sharedOptions))ctx.window.webContents.send('drawing-tools-options',{options:sharedOptions,linked:true});

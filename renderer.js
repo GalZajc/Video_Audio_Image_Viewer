@@ -21,7 +21,7 @@ function renderTabs(){
   $('tabs').replaceChildren();
   tabs.forEach((tab,index)=>{
     const el=document.createElement('div');el._tab=tab;el.className='tab'+(index===active?' active':'');el.role='tab';el.setAttribute('aria-selected',index===active?'true':'false');el.title=tab.meta.path;
-    const icon=document.createElement('button');icon.className='mediaIcons';icon.title=tr('Vrste datotek za prehajanje po mapi','File types for folder navigation');for(const kind of tab.state.mediaFilter||[tab.meta.kind]){const img=document.createElement('img');img.src='assets/'+kind+'.svg';img.alt=kind;icon.append(img);}icon.addEventListener('click',event=>{event.stopPropagation();showTypeMenu(tab,icon);});icon.addEventListener('dblclick',event=>event.stopPropagation());const name=document.createElement('span');name.className='name';name.textContent=tab.meta.name;const x=document.createElement('button');x.className='x';x.textContent='×';x.title='Zapri zavihek';x.setAttribute('aria-label','Zapri '+tab.meta.name);
+    const icon=document.createElement('button');icon.className='mediaIcons';icon.title=tr('Vrste datotek za prehajanje po mapi','File types for folder navigation');for(const kind of tab.state.mediaFilter||[tab.meta.kind]){const img=document.createElement('img');img.src='assets/'+kind+'.svg';img.alt=kind;icon.append(img);}icon.addEventListener('click',event=>{event.stopPropagation();showTypeMenu(tab,icon);});icon.addEventListener('dblclick',event=>event.stopPropagation());const name=document.createElement('span');name.className='name';name.textContent=tab.meta.name;const x=document.createElement('button');x.className='x';x.textContent='×';x.title=tr('Zapri zavihek','Close tab');x.setAttribute('aria-label',tr('Zapri ','Close ')+tab.meta.name);
     x.addEventListener('click',event=>{event.stopPropagation();closeTab(tabs.indexOf(tab));});x.addEventListener('dblclick',event=>event.stopPropagation());
     el.append(icon,name,x);el.addEventListener('click',()=>{if(!suppressTabClick)activate(tabs.indexOf(tab));});
     el.addEventListener('auxclick',event=>{if(event.button===1){event.preventDefault();closeTab(tabs.indexOf(tab));}});
@@ -43,17 +43,17 @@ function tabSwapIndex(tab,pointerX,fraction){
  if(!element||index<0)return index;
  const center=pointerX+(0.5-fraction)*element.offsetWidth,slot=element.offsetLeft+element.offsetWidth/2,ratio=config.view.tabSwapFraction;
  let target=index;
- for(let i=index+1;i<elements.length;i++){const other=elements[i],threshold=slot+(other.offsetLeft+other.offsetWidth/2-slot)*ratio;if(center>threshold)target=i;else break;}
- if(target===index)for(let i=index-1;i>=0;i--){const other=elements[i],threshold=slot+(other.offsetLeft+other.offsetWidth/2-slot)*ratio;if(center<threshold)target=i;else break;}
+ for(let i=index+1;i<elements.length;i++){const other=elements[i],threshold=slot+(other.offsetLeft+other.offsetWidth/2-slot)*ratio;if(center>threshold+config.view.tabSwapHysteresis/2)target=i;else break;}
+ if(target===index)for(let i=index-1;i>=0;i--){const other=elements[i],threshold=slot+(other.offsetLeft+other.offsetWidth/2-slot)*ratio;if(center<threshold-config.view.tabSwapHysteresis/2)target=i;else break;}
  return target;
 }
 function reorderTab(tab,position){
-  const positions=new Map([...$('tabs').children].map(el=>[el,el.offsetLeft]));
+  const positions=new Map([...$('tabs').children].map(el=>[el,el.getBoundingClientRect().left]));
   const selected=current(),from=tabs.indexOf(tab);if(from<0)return;
   tabs.splice(from,1);tabs.splice(C.clamp(position,0,tabs.length),0,tab);active=tabs.indexOf(selected);
   const element=[...$('tabs').children].find(el=>el._tab===tab),next=tabs[tabs.indexOf(tab)+1];
   const nextElement=[...$('tabs').children].find(el=>el._tab===next);$('tabs').insertBefore(element,nextElement||null);
-  for(const el of $('tabs').children){if(el!==tabDrag?.element){const dx=positions.get(el)-el.offsetLeft;if(dx)el.animate([{transform:`translateX(${dx}px)`},{transform:'translateX(0)'}],{duration:config.view.tabAnimationMs,easing:'ease-out'});}}
+  for(const el of $('tabs').children){for(const animation of el.getAnimations())animation.cancel();if(el!==element){const dx=positions.get(el)-el.getBoundingClientRect().left;if(dx)el.animate([{transform:`translateX(${dx}px)`},{transform:'translateX(0)'}],{duration:config.view.tabAnimationMs,easing:'ease-out'});}}
   persistSoon();
 }
 document.addEventListener('pointermove',event=>{
@@ -120,7 +120,7 @@ function closeTab(index=active){
   if(!tabs.length)$('raster').style.display='none';
   renderTabs();persistSoon(true);
 }
-async function restore(){if(!closed.length)return toast('Ni zaprtih zavihkov.');const item=closed.pop();await openFiles([item.path],[item]);persistSoon(true);}
+async function restore(){if(!closed.length)return toast(tr('Ni zaprtih zavihkov.','No closed tabs.'));const item=closed.pop();await openFiles([item.path],[item]);persistSoon(true);}
 function rect(){const tab=current();return tab&&!tab.meta.isAudio?Visual.geometry(stage.clientWidth,stage.clientHeight,tab.meta.width,tab.meta.height,tab.state):null;}
 function layout(){
   const tab=current(),r=rect();if(!r){cropOverlay.style.display='none';$('raster').style.display='none';if($('zoomReadout'))$('zoomReadout').hidden=true;return;}if($('zoomReadout'))$('zoomReadout').hidden=false;
@@ -147,7 +147,7 @@ video.addEventListener('loadedmetadata',()=>{
   tab.state.time=Math.min(tab.state.time,video.duration);video.playbackRate=tab.state.rate;layout();updateTimeline();
   if(tab.state.playing)video.play().catch(showError);else drawStill();
 });
-video.addEventListener('loadeddata',()=>{drawStill();window.player.dragContentReady();});
+video.addEventListener('loadeddata',()=>{drawStill();requestAnimationFrame(()=>window.player.dragContentReady());});
 video.addEventListener('seeked',()=>{
   const tab=current();if(!tab||!loaded||tab.meta.isImage)return;seekTarget=null;tab.state.time=video.currentTime;
   if(video.paused&&!tab.meta.isAudio){const stamp=epoch,target=video.currentTime;window.player.frame({id:tab.meta.id,time:target}).then(frame=>{if(stamp===epoch&&video.paused&&!video.seeking&&Math.abs(video.currentTime-target)<.00001){tab.state.frameTime=frame.time;drawStill();updateTimeline();}}).catch(showError);}
@@ -263,7 +263,7 @@ async function exportToFolder(tab,folder){
   }catch(error){showError(error);}finally{exportBusy=false;}
 }
 function setSpeed(delta){const tab=current();if(!tab||!loaded||tab.meta.isImage)return;tab.state.rate=C.clamp(Math.round((video.playbackRate+delta)*100)/100,config.playback.minSpeed,config.playback.maxSpeed);video.playbackRate=tab.state.rate;toast(`${Math.round(tab.state.rate*100)} %`,1600,'speed');updateTimeline();persistSoon();controls();}
-function volume(delta){const tab=current();if(!tab)return;video.volume=C.clamp(video.volume+delta,0,1);video.muted=false;tab.state.volume=video.volume;tab.state.muted=false;toast(`Zvok ${Math.round(video.volume*100)} %`);persistSoon();controls();}
+function volume(delta){const tab=current();if(!tab)return;video.volume=C.clamp(video.volume+delta,0,1);video.muted=false;tab.state.volume=video.volume;tab.state.muted=false;toast(tr('Zvok ','Volume ')+Math.round(video.volume*100)+' %');persistSoon();controls();}
 async function toggleFullscreen(){try{const value=await window.player.fullscreen();document.body.classList.toggle('systemFullscreen',value);layout();controls();}catch(error){showError(error);}}
 async function escape(expand=false){
   if(closeTopPanel())return;const tab=current();if(!tab)return;const s=tab.state;

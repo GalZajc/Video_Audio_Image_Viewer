@@ -14,7 +14,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
   clearInterval(drag.timer);clearTarget(drag);drag.sender.removeListener('destroyed',drag.cleanup);if(candidates.get(drag.sourceId)===drag)candidates.delete(drag.sourceId);
   if(!drag.window.isDestroyed()){drag.window.setOpacity(1);drag.window.setAlwaysOnTop(drag.wasOnTop);}
   if(!drag.single&&!drag.promoted&&!drag.window.isDestroyed()){
-   drag.window.hide();drag.window.setOpacity(1);drag.ctx.state={tabs:[],active:0,closed:[],history:[]};drag.ctx.dragPresentation=null;
+   drag.window.hide();drag.window.setOpacity(1);drag.ctx.state={tabs:[],active:0,closed:[],history:[]};drag.ctx.dragPresentation=null;drag.ctx.resolveDragReady?.();drag.ctx.resolveDragReady=null;
    drag.window.webContents.send('tab-drag-reset');
    if(!spare)spare=drag.ctx;else drag.window.destroy();
   }
@@ -50,7 +50,8 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
    drag.ready=ctx.loaded.then(async()=>{
     if(candidates.get(id)!==drag)return;
     if(single){if(drag.outside){if(source.window.isFullScreen())await setFullscreen(false,source.window);if(source.window.isMaximized())source.window.unmaximize();source.window.setBounds(b);}}
-    else{target.webContents.send('tab-drag-presentation',presentation);target.webContents.send('receive-tab',{tab:{...value.tab,playing:false},index:0});}
+    else{const content=new Promise(resolve=>ctx.resolveDragReady=resolve);target.webContents.send('tab-drag-presentation',presentation);target.webContents.send('receive-tab',{tab:{...value.tab,playing:false},index:0});await Promise.race([content,new Promise(resolve=>{const timeout=setTimeout(resolve,defaults.view.dragContentTimeoutMs);timeout.unref();content.finally(()=>clearTimeout(timeout));})]);ctx.resolveDragReady=null;}
+    if(candidates.get(id)!==drag)return;
     drag.readyResolved=true;update(drag);
    }).catch(error=>{if(!target.isDestroyed()&&candidates.get(id)===drag)console.error(error.message);});
    drag.timer=setInterval(()=>update(drag),defaults.view.tabDragPreviewIntervalMs);event.sender.once('destroyed',drag.cleanup);update(drag);return;
@@ -77,5 +78,5 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
   }else throw Error('The tab drag has ended.');
   source.state.tabs=source.state.tabs.filter(t=>t.instanceId!==tab.instanceId);await saveWindows();if(process.env.VAP_TEST_MODE!=='1'){target.window.show();target.window.focus();}return {windowId:target.window.id};
  });
- return {getDragWindows:()=>[...candidates.values()].map(d=>d.window)};
+ return {getHeldDrawing:()=>{const d=[...candidates.values()].find(d=>d.outside);return d?{tab:d.tab,source:d.source}:null;},getDragWindows:()=>[...candidates.values()].map(d=>d.window)};
 };

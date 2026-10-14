@@ -53,10 +53,11 @@ function paintPreview(){
 }
 function render(){
  if(!options||!config)return;document.documentElement.lang=language;
+ for(const [id,sl,en] of [['textBold','Krepko','Bold'],['textItalic','Ležeče','Italic'],['eraserPreview','Predogled radiranja','Eraser preview'],['colorMode','Barvni prostor','Color space'],['colorUnits','Enote','Units'],['fontFamily','Pisava','Font']])$(id).title=$(id).ariaLabel=tr(sl,en);
  for(const el of document.querySelectorAll('[data-sl]'))el.textContent=tr(el.dataset.sl,el.dataset.en);
  for(const row of document.querySelectorAll('.toolRow')){
   const tool=row.dataset.tool,button=row.querySelector('.toolIcon'),rgb=Visual.hsv(color(tool).hue,color(tool).saturation,color(tool).brightness),e=tool===options.tool?config.drawing.selectedToolTint:0;
-  row.classList.toggle('expanded',tool===(options.expandedTool===undefined?options.tool:options.expandedTool));button.style.color=cssColor(tool);button.style.background=`rgb(${rgb.map(v=>Math.round((1-e)*44+e*v)).join(',')})`;
+  button.title=button.ariaLabel=tr({line:'Krivulja',arrow:'Polna puščica',arrowOpen:'Odprta puščica',text:'Besedilo',eraser:'Radirka'}[tool],{line:'Curve',arrow:'Filled arrow',arrowOpen:'Open arrow',text:'Text',eraser:'Eraser'}[tool]);row.classList.toggle('expanded',tool===(options.expandedTool===undefined?options.tool:options.expandedTool));button.style.color=cssColor(tool);button.style.background=`rgb(${rgb.map(v=>Math.round((1-e)*44+e*v)).join(',')})`;
  }
  for(const [key,parts] of parameters){const r=range(key);for(const p of parts){p.header.textContent=tr(p.node.dataset.labelSl,p.node.dataset.labelEn);p.slider.min=r.min;p.slider.max=r.max;p.slider.value=options[key]??config.drawing[key]??4;p.min.textContent=r.min;p.max.textContent=r.max;}}
  $('fontFamily').value=options.font;for(const [id,key] of [['textBold','bold'],['textItalic','italic'],['eraserPreview','eraserPreview']])$(id).classList.toggle('selected',!!options[key]);

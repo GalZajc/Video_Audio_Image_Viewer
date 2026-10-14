@@ -11,7 +11,7 @@ function localize(){
 }
 function initViewer(){drawingOptions={...config.drawing};localize();renderDrawingMenu();renderEditorSettings();}
 function loadImage(tab){
-  const img=$('image'),stamp=epoch;img.onload=()=>{if(stamp!==epoch)return;tab.meta.width=img.naturalWidth;tab.meta.height=img.naturalHeight;loaded=true;img.style.display='block';layout();syncPanels();window.player.dragContentReady();};
+  const img=$('image'),stamp=epoch;img.onload=()=>{if(stamp!==epoch)return;tab.meta.width=img.naturalWidth;tab.meta.height=img.naturalHeight;loaded=true;img.style.display='block';layout();syncPanels();requestAnimationFrame(()=>window.player.dragContentReady());};
   img.onerror=async()=>{if(stamp!==epoch)return;try{if(tab.imageUrl)throw new Error(tr('Slike ni mogoče prikazati.','Unable to display image.'));tab.imageUrl=await window.player.prepareImage(tab.meta.id);if(stamp===epoch)img.src=tab.imageUrl;}catch(error){showError(error);}};
   if(tab.meta.videoCodec==='svg'&&!tab.imageUrl){window.player.prepareImage(tab.meta.id).then(url=>{tab.imageUrl=url;if(stamp===epoch)img.src=url;}).catch(showError);}else img.src=tab.imageUrl||tab.meta.url;
 }

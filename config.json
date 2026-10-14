@@ -49,7 +49,9 @@
     "tabDetachFadeMs": 100,
     "tabDetachLoadTimeoutMs": 4000,
     "tabAttachHeight": 28,
-    "tabAttachFadeMs": 150
+    "tabAttachFadeMs": 150,
+    "tabSwapHysteresis": 6,
+    "dragContentTimeoutMs": 15000
   },
   "storage": {
     "closedTabs": 500,
@@ -131,7 +133,9 @@
     "shrinkWindow": "Escape+Digit6",
     "maxWindow": "Escape+Digit7",
     "subtitles": "KeyC",
-    "timelinePreview": "KeyP"
+    "timelinePreview": "KeyP",
+    "copyImage": "Ctrl+KeyC",
+    "ocr": "Ctrl+Shift+KeyO"
   },
   "mediaTypes": {
     "video": [
@@ -268,5 +272,15 @@
       "ssa"
     ],
     "cacheEntries": 16
+  },
+  "extras": {
+    "clipboardMaxBytes": 67108864,
+    "copyFlashMs": 240,
+    "screenshotPageSize": 48,
+    "screenshotThumbWidth": 160,
+    "screenshotThumbCache": 192,
+    "ocrTimeoutMs": 30000,
+    "ocrMaxInputBytes": 67108864,
+    "ocrDimOpacity": 0.58
   }
 }

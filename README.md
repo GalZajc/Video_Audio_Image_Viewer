@@ -135,3 +135,17 @@ Each freehand line/arrow tool has a separate whole-curve smoothing wavelength, i
 Filled triangular heads optionally align to the displayed curve where it crosses their base. The fixed-point iteration uses a small angular tolerance, damping and a finite iteration limit; degenerate curves keep the best available estimate.
 
 The shaft mask is restricted to the apex neighborhood. Earlier bends remain visible instead of being clipped by a rotating global half-plane. The same geometry and smoothing are used in previews, live drawing, retained history and raster export.
+
+## Version 2.6.0
+
+Ctrl+C copies the current image with exactly the PNG export transform/crop/annotation pipeline, followed by a brief green flash. It leaves the clipboard unchanged for audio/video. The encoded image is piped directly into the clipboard; temporary input rasters are removed.
+
+Ctrl+O opens folder choices and a paged, lazy thumbnail gallery of the Windows Screenshots known folder, newest first. Clicking a screenshot opens a new tab. Redirected Screenshots folders are read from the current user's known-folder setting.
+
+Ctrl+Shift+O opens a separate selectable-text overlay using the local [Windows OCR engine](https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr.ocrengine). Images use their original decoded pixels; paused videos extract their source frame through FFmpeg. Crop, drawings, flips, rotation, pan and zoom do not enter recognition. Non-text regions are dimmed, words can be selected and Ctrl+C copies plain text. Escape restores the previous editing view. Large images are scaled to the engine limit and word rectangles are mapped back to source coordinates. Recognition uses installed Windows languages, including the user profile language; other platforms report that this backend requires Windows.
+
+Text boxes use their text color for the frame and handles, provide a center translation handle, and rotate the resize cursor with the displayed box. Tool labels and native menu captions follow SL/EN. Both tool windows keep a small symmetric bottom inset; collapsed headers have a single border and the open-arrow options omit the redundant first separator.
+
+Tab reordering excludes the held tab from sibling animations, cancels superseded animations and adds a small hysteresis to the shared slot threshold. Held tabs retain ownership of drawing palettes. Detachment waits for actual media content and reuses metadata when file size/mtime are unchanged, avoiding the empty logo frame.
+
+Arrow rasterization now tapers only the terminal arc. Earlier visits to the same region remain in a separate opaque coverage mask; the final color/alpha is applied once, preserving transparent self-crossings. The existing direction and whole-curve smoothing filters remain unchanged.

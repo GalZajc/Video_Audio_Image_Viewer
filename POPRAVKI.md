@@ -98,3 +98,9 @@ Preverjanje vključuje dejanske vnose miške pri priključevanju zavihkov in ris
 - Ločena stanja orodij po zavihkih, takojšnja menjava lastnika ob kliku drugega okna, izbirni skupni način.
 - Glajenje celotne prostoročne krivulje in iterativno usmerjanje trikotne konice pri osnovnici.
 - Popravljena globalna maska, zaradi katere so starejši deli črt izginjali.
+
+## Deveti pregled — 2.6.0
+
+Popravljenih osem zahtevkov: stabilno vlečenje zavihkov in prikaz dejanske vsebine; menija z majhnim robom, enojnimi obrobami in ohranjeno pripadnostjo držanemu zavihku; ohranitev starejših obhodov pod trenutno konico; kopiranje slike; Ctrl+O s posnetki zaslona; prevodi; tekstovni ročaji; ločen Windows OCR s kopiranjem izbranega besedila.
+
+Preverjeno z realnim Windows OCR, native izbiro besedila, PNG primerjavo odložišča in izvoza, vlečenjem ter samopresečišči prosojnih puščic.

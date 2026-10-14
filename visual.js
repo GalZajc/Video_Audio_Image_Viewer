@@ -26,6 +26,7 @@
     }
     const points=renderPoints(stroke);if(!points?.length)return;ctx.save();ctx.strokeStyle=ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';
     const arrow=stroke.arrow&&points.length>1?arrowHead(stroke):null;
+    if(arrow){const ink=typeof module!=='undefined'?require('./arrow-ink'):root.ArrowInk;if(ink.draw(ctx,stroke,points,arrow)){ctx.restore();return;}}
     if(arrow){
       // The taper is local to the apex. A global half-plane used to erase old
       // bends every time the head changed direction. The even-odd mask leaves

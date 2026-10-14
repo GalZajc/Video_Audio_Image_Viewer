@@ -154,3 +154,13 @@ Risarski okni sta vedno v ospredju in se tesno prilagajata vsebini do največ 10
 Krivulje in obe puščici imajo novo nastavitev glajenja celotne poteze; 0 ga izključi. Vrednost je valovna dolžina v izvornih pikslih. Trikotna konica ima dodatno možnost »Smer konice pri osnovnici«. Doslej sprejeti filter za smer konice ostane nespremenjen.
 
 Omejevanje črte pri vrhu puščice je lokalno, zato starejši deli krivulj med risanjem ne izginjajo. Glajenje deluje sproti ter se enako ohrani po izpustu miške in pri izvozu.
+
+## Različica 2.6.0
+
+Ctrl+C kopira sliko z enakim obrezom, rotacijo, zrcaljenjem in risbami kot PNG izvoz ter jo na kratko zeleno obarva. Pri videu in zvoku odložišče ostane nespremenjeno. Ctrl+O ponudi mape in mrežo shranjenih Windowsovih posnetkov zaslona, najnovejše najprej; klik odpre nov zavihek.
+
+Ctrl+Shift+O odpre ločen prikaz za označevanje besedila z lokalnim Windowsovim OCR. Pri videu mora biti predvajanje ustavljeno. OCR uporabi izvirno sliko oziroma izvorno sličico, brez obreza, risb ali sprememb pogleda. Označi del besedila in uporabi Ctrl+C; Escape povrne prejšnji pogled. Uporabljeni so nameščeni Windowsovi jeziki. Drugi operacijski sistemi sporočijo omejitev tega OCR pogona. Obe novi bližnjici lahko preslikaš v nastavitvah.
+
+Tekstovna škatla ima svojo barvo, sredinski ročaj za premikanje in kazalec za širino, ki se vrti skupaj z njo. Risarska menija imata majhen simetričen spodnji rob in popravljene enojne obrobe. Med držanjem zavihka ostaneta vezana nanj; zavihek nima nasprotujoče animacije ali nihanja ob meji. Novo okno se pokaže šele z naloženo vsebino, že znani nespremenjeni posnetki pa se ponovno ne analizirajo.
+
+Pri puščici se omejuje samo zadnji del poti; predhodni obhodi istega območja se ohranijo. Prosojnost se uporabi enkrat na združeni geometriji. Filtra smeri in glajenja ostaneta enaka.
