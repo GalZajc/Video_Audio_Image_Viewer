@@ -19,17 +19,17 @@ function setFullscreen(value,target=win){
   target._fullscreenQueue=(target._fullscreenQueue||Promise.resolve()).catch(()=>{}).then(()=>new Promise(resolve=>{if((target._fullscreenState||false)===value)return resolve(value);const event=value?'enter-full-screen':'leave-full-screen';let timer;const done=()=>{clearTimeout(timer);target.removeListener(event,done);target._fullscreenState=value;resolve(value);};target.once(event,done);timer=setTimeout(()=>{target.removeListener(event,done);target._fullscreenState=target.isFullScreen();target.webContents.send('fullscreen',target._fullscreenState);resolve(target._fullscreenState);},defaults.window.transitionTimeoutMs);target.setFullScreen(value);}));return target._fullscreenQueue;
 }
 function contextFor(event){const ctx=windowContexts.get(event.sender.id);if(!ctx)throw new Error('Okno ni več odprto.');return ctx;}
-function liveWindows(){return [...windowContexts.values()].filter(c=>!c.window.isDestroyed());}
+function liveWindows(){return [...windowContexts.values()].filter(c=>!c.window.isDestroyed()&&!c.temporary);}
 function saveWindows(fallback){const contexts=quitting?quitContexts:liveWindows(),selected=contexts.find(c=>c.window===(quitting?quitActive:win))||contexts[0]||fallback;const list=contexts.length?contexts:fallback?[fallback]:[];state={...(selected?.state||{tabs:[],active:0,closed:[],history:[]}),windows:list.map(c=>({...c.state,bounds:c.window.isDestroyed()?c.bounds:c.window.getBounds()})),activeWindow:Math.max(0,list.indexOf(selected))};return persist('history.json',state);}
 function routeFiles(files){const target=win&&!win.isDestroyed()?win:liveWindows()[0]?.window;if(!target){pending.push(...files);return;}const ctx=windowContexts.get(target.webContents.id);if(ctx.ready)target.webContents.send('open-files',files);else ctx.pending.push(...files);if(target.isMinimized())target.restore();target.show();target.focus();}
 function sweepReleases(){const used=new Set(liveWindows().flatMap(c=>c.state.tabs||[]).map(t=>t.path));for(const id of releaseRequests){const meta=Media.mediaById.get(id);if(meta&&!used.has(meta.path)&&!exporting){Media.release(id);releaseRequests.delete(id);}}}
-function createWindow(saved={tabs:[],active:0,closed:[],history:[]},bounds=null){
-  const created=new BrowserWindow({...defaults.window,...bounds,show:process.env.VAP_TEST_MODE!=='1',frame:false,backgroundColor:'#080808',title:'Video Audio Image Viewer',icon:path.join(__dirname,'assets','icon.png'),webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false,offscreen:process.env.VAP_TEST_MODE==='1'}});
-  const ctx={window:created,state:{tabs:saved.tabs||[],active:saved.active||0,closed:saved.closed||[],history:saved.history||[]},ready:false,pending:[],bounds:created.getBounds()};windowContexts.set(created.webContents.id,ctx);if(!win||win.isDestroyed())win=created;
-  created.on('focus',()=>{win=created;});created.webContents.setWindowOpenHandler(()=>({action:'deny'}));created.webContents.on('will-navigate',e=>e.preventDefault());created.on('maximize',()=>created.webContents.send('maximized',true));created.on('unmaximize',()=>created.webContents.send('maximized',false));
+function createWindow(saved={tabs:[],active:0,closed:[],history:[]},bounds=null,options={}){
+  const created=new BrowserWindow({...defaults.window,...bounds,show:!options.temporary&&process.env.VAP_TEST_MODE!=='1',frame:false,backgroundColor:'#080808',title:'Video Audio Image Viewer',icon:path.join(__dirname,'assets','icon.png'),webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false,offscreen:process.env.VAP_TEST_MODE==='1'}});
+  const ctx={window:created,temporary:!!options.temporary,dragPresentation:options.dragPresentation||null,state:{tabs:saved.tabs||[],active:saved.active||0,closed:saved.closed||[],history:saved.history||[]},ready:false,pending:[],bounds:created.getBounds()};windowContexts.set(created.webContents.id,ctx);if(!ctx.temporary&&(!win||win.isDestroyed()))win=created;
+  created.on('focus',()=>{if(!ctx.temporary)win=created;});created.webContents.setWindowOpenHandler(()=>({action:'deny'}));created.webContents.on('will-navigate',e=>e.preventDefault());created.on('maximize',()=>created.webContents.send('maximized',true));created.on('unmaximize',()=>created.webContents.send('maximized',false));
   created._fullscreenState=false;for(const event of ['enter-full-screen','leave-full-screen'])created.on(event,()=>{created._fullscreenState=event==='enter-full-screen';created.webContents.send('fullscreen',created._fullscreenState);});
   created.on('close',event=>{ctx.bounds=created.getBounds();if(exporting){event.preventDefault();dialog.showMessageBox(created,{type:'info',message:'Izvoz še poteka.',buttons:['V redu']});}});
-  const id=created.webContents.id;created.on('closed',()=>{windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting)saveWindows(ctx);sweepReleases();});
+  const id=created.webContents.id;created.on('closed',()=>{windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting&&!ctx.temporary)saveWindows(ctx);sweepReleases();});
   ctx.loaded=created.loadFile(path.join(__dirname,'index.html')).then(()=>{if(process.env.VAP_TEST_MODE==='1')created.hide();return created;});return created;
 }
 function load(name,fallback){try{return JSON.parse(fs.readFileSync(path.join(data,name),'utf8'));}catch{return fallback;}}
@@ -82,7 +82,7 @@ else{
 }
 function metaFor(id){const meta=Media.mediaById.get(id);if(!meta)throw new Error('Posnetek ni več odprt.');return meta;}
 function notify(id,event){for(const ctx of liveWindows())ctx.window.webContents.send('progress',{id,...event});}
-ipcMain.handle('init',event=>{const ctx=contextFor(event);ctx.ready=true;const files=ctx.pending;ctx.pending=[];return {config:defaults,settings,state:ctx.state,files,windowId:ctx.window.id};});
+ipcMain.handle('init',event=>{const ctx=contextFor(event);ctx.ready=true;const files=ctx.pending;ctx.pending=[];return {config:defaults,settings,state:ctx.state,files,windowId:ctx.window.id,dragPresentation:ctx.dragPresentation};});
 ipcMain.handle('pick-files',async event=>{const win=contextFor(event).window;const result=await dialog.showOpenDialog(win,{title:settings.language==='en'?'Open media':'Odpri video, zvok ali sliko',properties:['openFile','multiSelections'],filters:[{name:'Video / Audio / Images',extensions:Object.values(defaults.mediaTypes).flat()},{name:'All files',extensions:['*']}]});return result.canceled?[]:result.filePaths;});
 ipcMain.handle('describe',(_event,file)=>Media.describe(file));
 ipcMain.handle('frame',(_event,{id,time,direction})=>Media.getFrame(metaFor(id),Number(time),Number(direction)||0,event=>notify(id,event)));
@@ -110,7 +110,7 @@ ipcMain.handle('settings',async(_event,value)=>{
   for(const key of Object.keys(formats))if(formats[key].includes(value[key]))settings[key]=value[key];
   if(['sl','en'].includes(value.language))settings.language=value.language;
   if(['name','modified','created','size'].includes(value.folderSort))settings.folderSort=value.folderSort;
-  for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit'])if(typeof value[key]==='boolean')settings[key]=value[key];
+  for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit','timelinePreviewFitAspect'])if(typeof value[key]==='boolean')settings[key]=value[key];
   if(typeof value.backgroundColor==='string'&&/^#[0-9a-f]{8}$/i.test(value.backgroundColor))settings.backgroundColor=value.backgroundColor;
   if(value.shortcuts){const next={};for(const key of Object.keys(defaults.shortcuts)){const binding=value.shortcuts[key];if(typeof binding!=='string'||!/^(?:(?:Ctrl|Alt|Shift|Meta|Escape)\+)*(?:Key[A-Z]|Digit[0-9]|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Space|Comma|Period|Tab|Escape|Backspace|Delete|Enter|Home|End|PageUp|PageDown|BracketLeft|BracketRight|Minus|Equal|Slash|Semicolon|Quote|Backquote|F(?:[1-9]|1[0-2]))$/.test(binding))throw new Error('Neveljavna bližnjica.');next[key]=binding;}if(new Set(Object.values(next)).size!==Object.keys(next).length)throw new Error('Bližnjice se ne smejo ponavljati.');settings.shortcuts=next;}
   if(value.drawingCustomization&&typeof value.drawingCustomization==='object'&&JSON.stringify(value.drawingCustomization).length<65536)settings.drawingCustomization=JSON.parse(JSON.stringify(value.drawingCustomization));
@@ -119,7 +119,7 @@ ipcMain.handle('settings',async(_event,value)=>{
 });
 ipcMain.handle('save-session',async(_event,next)=>{const ctx=windowContexts.get(_event.sender.id);if(!ctx)return;
   if(!Array.isArray(next.tabs)||!Array.isArray(next.closed)||!Array.isArray(next.history))return;
-  ctx.state={tabs:next.tabs,active:next.active,closed:next.closed.slice(-defaults.storage.closedTabs),history:next.history.slice(-defaults.storage.historyEntries)};await saveWindows(ctx);sweepReleases();
+  ctx.state={tabs:next.tabs,active:next.active,closed:next.closed.slice(-defaults.storage.closedTabs),history:next.history.slice(-defaults.storage.historyEntries)};if(!ctx.temporary){await saveWindows(ctx);sweepReleases();}
 });
 ipcMain.handle('export',async(_event,{id,selection,folder,options})=>{const win=contextFor(_event).window;
   if(exporting)throw new Error('Izvoz že poteka.');
@@ -154,28 +154,6 @@ app.on('before-quit',()=>{if(!quitting){quitting=true;quitContexts=liveWindows()
 app.on('will-quit',event=>{if(quitFlushed)return;event.preventDefault();writeQueue.finally(()=>{quitFlushed=true;app.quit();});});
 module.exports={getWindow:()=>win,getWindows:()=>liveWindows().map(c=>c.window),createWindow,routeFiles,fileArgs};
 
-// An unfocusable native preview remains visible outside the source's clipped
-// titlebar. The source tab stays intact until the destination has loaded.
-const dragPreviews=new Map();
-ipcMain.on('tab-drag-preview',async(event,value)=>{
- const id=event.sender.id;let preview=dragPreviews.get(id);
- if(!value?.visible){preview?.cleanup();return;}
- const position=()=>{if(!preview||preview.window.isDestroyed())return;const p=process.env.VAP_TEST_MODE==='1'?preview.point:screen.getCursorScreenPoint();preview.window.setPosition(Math.round(p.x-preview.width/2),Math.round(p.y-12));};
- if(preview){preview.point=value;position();return;}
- const source=contextFor(event).window,b=source.getBounds(),width=defaults.view.tabDragPreviewWidth,height=Math.round(width*b.height/b.width);
- const ghost=new BrowserWindow({width,height,frame:false,transparent:true,show:false,focusable:false,skipTaskbar:true,alwaysOnTop:true,resizable:false,webPreferences:{sandbox:true,contextIsolation:true}});ghost.setIgnoreMouseEvents(true);
- preview={window:ghost,width,point:value,timer:null,cleanup:()=>{clearInterval(preview.timer);event.sender.removeListener('destroyed',preview.cleanup);if(!ghost.isDestroyed())ghost.destroy();if(dragPreviews.get(id)===preview)dragPreviews.delete(id);}};event.sender.once('destroyed',preview.cleanup);dragPreviews.set(id,preview);position();ghost.showInactive();
- let shot;try{shot=await event.sender.capturePage();}catch{preview.cleanup();return;}if(ghost.isDestroyed())return;
- try{await ghost.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(`<html><body style="margin:0;overflow:hidden;border:1px solid #81d8ff;border-radius:6px;background:#222;box-sizing:border-box"><img style="display:block;width:100%;opacity:.9" src="${shot.resize({width}).toDataURL()}"></body></html>`));}catch{preview.cleanup();return;}
- if(ghost.isDestroyed())return;ghost.showInactive();preview.timer=setInterval(position,defaults.view.tabDragPreviewIntervalMs);
-});
-
-ipcMain.handle('move-tab',async(event,{tab,x,y})=>{
-  const source=contextFor(event);if(!tab||typeof tab.path!=='string'||!source.state.tabs.some(t=>t.path===tab.path)||!Number.isFinite(x)||!Number.isFinite(y))throw new Error('Neveljaven prenos zavihka.');
-  let target=liveWindows().find(c=>{if(c===source)return false;const b=c.window.getBounds();return x>=b.x&&x<b.x+b.width&&y>=b.y&&y<b.y+b.height;});
-  if(!target){const b=source.window.getBounds(),work=screen.getDisplayNearestPoint({x:Math.round(x),y:Math.round(y)}).workArea;const width=Math.min(b.width,work.width),height=Math.min(b.height,work.height);const created=createWindow({tabs:[tab],active:0,closed:[],history:[]},{width,height,x:Math.round(Math.max(work.x,Math.min(work.x+work.width-width,x-width/2))),y:Math.round(Math.max(work.y,Math.min(work.y+work.height-height,y-14)))});target=windowContexts.get(created.webContents.id);await target.loaded;}
-  else{target.state.tabs.push(tab);target.window.webContents.send('receive-tab',{tab,index:Math.min(target.state.tabs.length-1,Math.max(0,Math.floor((x-target.window.getBounds().x)/192)))});}
-  source.state.tabs=source.state.tabs.filter(t=>tab.instanceId?t.instanceId!==tab.instanceId:t.path!==tab.path);await saveWindows();if(process.env.VAP_TEST_MODE!=='1'){target.window.show();target.window.focus();}return {windowId:target.window.id};
-});
+Object.assign(module.exports,require('./tab-windows-main')({ipcMain,screen,defaults,contextFor,liveWindows,windowContexts,createWindow,saveWindows}));
 
 require('./media-overlays-main')({ipcMain,dialog,contextFor,metaFor,Media,defaults});

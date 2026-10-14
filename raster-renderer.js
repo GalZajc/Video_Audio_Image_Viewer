@@ -27,9 +27,15 @@ class PixelRaster{
   }
   draw(source,ink,r,state,background,showInk){
     const gl=this.gl;if(Math.max(r.bw,ink.width)>gl.getParameter(gl.MAX_TEXTURE_SIZE)||Math.max(r.bh,ink.height)>gl.getParameter(gl.MAX_TEXTURE_SIZE))throw new Error('Image exceeds GPU texture size');
-    const stamp=[source,source.currentSrc||source.src,source.currentTime,ink._revision,r.bw,r.bh,state.rotation,state.flipX,state.flipY,background,showInk];if(this.stamp&&stamp.every((v,i)=>v===this.stamp[i]))return;this.stamp=stamp;
+    const stamp=[source,source.currentSrc||source.src,source.currentTime,showInk?ink._revision:0,r.bw,r.bh,state.rotation,state.flipX,state.flipY,background,showInk];if(this.stamp&&stamp.every((v,i)=>v===this.stamp[i]))return;this.stamp=stamp;
     if(this.canvas.width!==r.bw||this.canvas.height!==r.bh){this.canvas.width=r.bw;this.canvas.height=r.bh;}gl.viewport(0,0,r.bw,r.bh);gl.useProgram(this.program);
-    this.uploads||=[];[source,ink].forEach((image,i)=>{const version=i===0?(source.currentTime??source.currentSrc??source.src):ink._revision,old=this.uploads[i];if(old?.image===image&&old.version===version&&old.width===r.w&&old.height===r.h)return;gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,this.textures[i]);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);this.uploads[i]={image,version,width:r.w,height:r.h};});
+    this.uploads||=[];[source,ink].forEach((image,i)=>{const version=i===0?(source.currentTime??source.currentSrc??source.src):ink._revision,old=this.uploads[i],width=i?ink.width:r.w,height=i?ink.height:r.h;
+      gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,this.textures[i]);
+      if(i&&!showInk){if(!old){gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4));this.uploads[i]={width:1,height:1};}return;}
+      if(old?.image===image&&old.version===version&&old.width===width&&old.height===height)return;
+      const dirty=i&&ink._dirty;if(dirty&&old?.image===image&&old.width===width&&old.height===height&&dirty.right>dirty.x&&dirty.bottom>dirty.y){this.inkTile||=document.createElement('canvas');this.inkTile.width=dirty.right-dirty.x;this.inkTile.height=dirty.bottom-dirty.y;this.inkTile.getContext('2d').drawImage(ink,dirty.x,dirty.y,this.inkTile.width,this.inkTile.height,0,0,this.inkTile.width,this.inkTile.height);gl.texSubImage2D(gl.TEXTURE_2D,0,dirty.x,dirty.y,gl.RGBA,gl.UNSIGNED_BYTE,this.inkTile);this.partialInkUploads=(this.partialInkUploads||0)+1;}else{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);if(i)this.fullInkUploads=(this.fullInkUploads||0)+1;}
+      this.uploads[i]={image,version,width,height};if(i)ink._dirty=null;
+    });
     const rotation=((state.rotation||0)%360+360)%360,{c,s}=rotationIntegers(rotation),location=name=>gl.getUniformLocation(this.program,name);
     gl.uniform2i(location('inkOffset'),ink._offset?.x||0,ink._offset?.y||0);gl.uniform2i(location('inkSize'),ink.width,ink.height);gl.uniform2i(location('size'),r.w,r.h);gl.uniform2i(location('outSize'),r.bw,r.bh);gl.uniform2i(location('cs'),c,s);gl.uniform2i(location('origin'),Math.trunc(-(r.bw-1)*c/2)+Math.trunc(-(r.bh-1)*s/2)+32768*(r.w-1),Math.trunc((r.bw-1)*s/2)+Math.trunc(-(r.bh-1)*c/2)+32768*(r.h-1));gl.uniform2i(location('mirrors'),state.flipX?1:0,state.flipY?1:0);gl.uniform1i(location('quarter'),rotation%90===0?rotation/90:-1);gl.uniform1i(location('showInk'),showInk?1:0);gl.uniform4fv(location('background'),[0,2,4,6].map(i=>parseInt(background.slice(i+1,i+3),16)/255));gl.drawArrays(gl.TRIANGLES,0,6);
   }

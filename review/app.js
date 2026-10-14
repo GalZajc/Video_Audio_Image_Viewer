@@ -43,7 +43,10 @@ function archiveButton(feature,restore=false){
   };return button;
 }
 function render(){
-  const query=$('search').value.toLocaleLowerCase('sl'),filter=$('filter').value,list=$('list');list.replaceChildren();const groups=new Map();const matches=f=>!query||`${f.text} ${f.group} ${noteText(f.id)} ${f.id}`.toLocaleLowerCase('sl').includes(query);
+  const scroll=window.scrollY,query=$('search').value.toLocaleLowerCase('sl'),filter=$('filter').value,list=$('list');
+  // Keep the document tall while rebuilding status/filter rows. A focused caret
+  // otherwise forces layout before deferred textarea sizing and clamps scroll.
+  list.style.minHeight=list.scrollHeight+'px';list.replaceChildren();const groups=new Map();const matches=f=>!query||`${f.text} ${f.group} ${noteText(f.id)} ${f.id}`.toLocaleLowerCase('sl').includes(query);
   for(const f of allFeatures()){const e=entry(f.id);if(state.archived.includes(f.id)||!matches(f)||(filter!=='all'&&e.status!==filter))continue;if(!groups.has(f.group))groups.set(f.group,[]);groups.get(f.group).push(f);}
   for(const [group,rows] of groups){
     const section=document.createElement('section'),heading=document.createElement('h2');heading.textContent=group;section.append(heading);
@@ -53,7 +56,7 @@ function render(){
       const id=document.createElement('span');id.className='id';id.textContent=f.id+(f.custom?' · nova zahteva':'');desc.append(id);desc.tabIndex=0;desc.title='Klikni za urejanje zahtevka';desc.setAttribute('role','button');desc.setAttribute('aria-label',`Uredi zahtevek: ${f.text}`);desc.onclick=()=>editDescription(desc,f);desc.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();editDescription(desc,f);}};
       const status=document.createElement('div');status.className='status';
       for(const [value,className,label] of [['pass','yes','Deluje'],['assumed','assumed','Nisem preveril, verjetno deluje'],['fail','no','Za popraviti']]){
-        const button=document.createElement('button');button.type='button';button.className=className;button.innerHTML=statusIcon(value);button.setAttribute('aria-pressed',String(e.status===value));button.setAttribute('aria-label',`${label}: ${f.text}`);button.title=`${label} (ponovni klik odstrani oceno)`;button.onclick=()=>{state.entries[f.id]={...entry(f.id),status:entry(f.id).status===value?'todo':value};markDirty();render();if(entry(f.id).status==='fail')document.querySelector(`[data-id="${f.id}"] .notes`)?.focus();};status.append(button);
+        const button=document.createElement('button');button.type='button';button.className=className;button.innerHTML=statusIcon(value);button.setAttribute('aria-pressed',String(e.status===value));button.setAttribute('aria-label',`${label}: ${f.text}`);button.title=`${label} (ponovni klik odstrani oceno)`;button.onclick=()=>{state.entries[f.id]={...entry(f.id),status:entry(f.id).status===value?'todo':value};markDirty();render();};status.append(button);
       }
       status.append(archiveButton(f));top.append(desc,status);row.append(top);
       row.append(noteControls(f),screenshotControls(f));section.append(row);
@@ -64,7 +67,7 @@ function render(){
   const archive=$('archiveList');archive.replaceChildren();
   for(const id of state.archived){const f=allFeatures().find(item=>item.id===id);if(!f||!matches(f))continue;const row=document.createElement('div');row.className='feature archived';row.dataset.id=f.id;const top=document.createElement('div');top.className='featureTop';const desc=document.createElement('div');desc.className='description';desc.textContent=f.text;const group=document.createElement('span');group.className='id';group.textContent=f.group;desc.append(group);const status=document.createElement('div');status.className='status';status.append(archiveButton(f,true));top.append(desc,status);row.append(top);archive.append(row);}
   if(!archive.children.length){const empty=document.createElement('div');empty.className='feature archiveEmpty';empty.textContent=state.archived.length?'Ni arhiviranih zahtevkov za to iskanje.':'Arhiv je prazen.';archive.append(empty);}
-  updateSummary();requestAnimationFrame(()=>document.querySelectorAll('.notes,.descriptionEditor').forEach(autoHeight));
+  updateSummary();document.querySelectorAll('.notes,.descriptionEditor').forEach(autoHeight);list.style.minHeight='';window.scrollTo({top:scroll,behavior:'instant'});
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function screenshotControls(feature){
@@ -81,9 +84,11 @@ function noteControls(f){const e=entry(f.id),box=document.createElement('div');b
   for(const [i,text] of (e.notesHistory||[]).entries()){const label=document.createElement('div');label.className='noteLabel';label.textContent=`Opomba ${i+1}`;const old=document.createElement('textarea');old.className='notes oldNote';old.value=text;old.readOnly=true;old.setAttribute('aria-label',`Prejšnja opomba ${i+1}: ${f.text}`);box.append(label,old);}
   let input=document.createElement('textarea');input.className='notes';input.value=e.notes;input.hidden=e.status!=='fail'&&!e.notes&&!e.notesHistory?.length;input.placeholder='Kaj je treba popraviti? Kaj se zgodi in kaj pričakuješ?';input.setAttribute('aria-label',`Opomba: ${f.text}`);input.oninput=()=>{state.entries[f.id]={...entry(f.id),notes:input.value};autoHeight(input);markDirty();};
   if(!input.hidden){const label=document.createElement('div');label.className='noteLabel';label.textContent=`Opomba ${(e.notesHistory||[]).length+1}`;box.append(label);}box.append(input);
-  if(e.status==='fail'||e.notes||e.notesHistory?.length){const add=document.createElement('button');add.className='newNote';add.textContent='Nova opomba';add.onpointerdown=event=>event.preventDefault();add.onclick=()=>{
-    const now=entry(f.id);if(!now.notes.trim()){input.focus({preventScroll:true});return;}
-    const scroll=window.scrollY;box.dataset.scrollBefore=scroll;state.entries[f.id]={...now,notesHistory:[...(now.notesHistory||[]),now.notes],notes:''};
+  if(e.status==='fail'||e.notes||e.notesHistory?.length){const add=document.createElement('button');add.type='button';add.className='newNote';add.textContent='Nova opomba';add.onpointerdown=event=>event.preventDefault();add.onclick=()=>{
+    const now=entry(f.id);if(!now.notes.trim())return;
+    const scroll=window.scrollY,containers=[];for(let node=box.parentElement;node;node=node.parentElement)if(node.scrollHeight>node.clientHeight)containers.push({node,top:node.scrollTop,left:node.scrollLeft});
+    const restore=()=>{for(const position of containers){position.node.scrollTop=position.top;position.node.scrollLeft=position.left;}window.scrollTo({top:scroll,behavior:'instant'});};
+    box.dataset.scrollBefore=scroll;input.blur();state.entries[f.id]={...now,notesHistory:[...(now.notesHistory||[]),now.notes],notes:''};
     // Keep every existing row and textarea in place: replacing the list collapses its
     // height and clamps the browser's scroll position before textarea sizing finishes.
     const label=document.createElement('div');label.className='noteLabel';label.textContent=`Opomba ${(now.notesHistory||[]).length+2}`;
@@ -91,8 +96,9 @@ function noteControls(f){const e=entry(f.id),box=document.createElement('div');b
     next.oninput=()=>{state.entries[f.id]={...entry(f.id),notes:next.value};autoHeight(next);markDirty();};
     input.readOnly=true;input.classList.add('oldNote');input.setAttribute('aria-label',`Prejšnja opomba ${(now.notesHistory||[]).length+1}: ${f.text}`);
     box.insertBefore(label,add);box.insertBefore(next,add);autoHeight(next);markDirty();
-    next.focus({preventScroll:true});window.scrollTo({top:scroll,behavior:'instant'});
-    input=next;requestAnimationFrame(()=>window.scrollTo({top:scroll,behavior:"instant"}));
+    // Keep focus on the clicked control. A focused textarea's caret can cause
+    // Chromium to scroll again after a resize, even after focus(preventScroll).
+    add.focus({preventScroll:true});restore();input=next;requestAnimationFrame(()=>{restore();requestAnimationFrame(restore);});
   };box.append(add);}
   return box;
 }

@@ -43,8 +43,9 @@
     "windowFitTolerance": 1,
     "tabAnimationMs": 150,
     "pivotHitPixels": 12,
-    "tabDragPreviewWidth": 360,
-    "tabDragPreviewIntervalMs": 16
+    "tabDragPreviewIntervalMs": 16,
+    "tabDetachFadeMs": 100,
+    "tabDetachLoadTimeoutMs": 4000
   },
   "storage": {
     "closedTabs": 500,
@@ -180,7 +181,8 @@
     "backgroundColor": "#000000ff",
     "timelinePreviewEnabled": true,
     "timelinePreviewWidth": 256,
-    "timelinePreviewHeight": 144
+    "timelinePreviewHeight": 144,
+    "timelinePreviewFitAspect": true
   },
   "associations": {
     "excluded": [
@@ -214,7 +216,11 @@
     "bold": false,
     "italic": false,
     "eraserPreview": false,
-    "arrowPersistence": 64
+    "arrowPersistence": 64,
+    "arrowStartupWidths": 4,
+    "arrowTurnRate": 3.141592653589793,
+    "arrowConfidence": 0.15,
+    "arrowSmoothingFraction": 0.25
   },
   "preview": {
     "quantizeSeconds": 0.25,

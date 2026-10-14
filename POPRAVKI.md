@@ -57,3 +57,17 @@ Pripravljena aplikacija je ponovno sestavljena. Prejšnje uporabnikove ocene in 
 Preverjanje: 18 samodejnih jedrnih/FFmpeg testov; Electron preizkusi predvajanja, risanja, zavihkov, fullscreen in kodekov; nov kombinirani preizkus v OUTPUT/review_fixes_validation_2026-10-12T15-36-16-386Z/report.json; preizkus sestavljenega paketa. Pri testnem 12 px besedilu je povprečni SSIM 0.999837 glede na dekodirani izvirnik. Zelo kratek statični izrez je bil na sekundo približno 2.35-krat večji: začetna ključna sličica in glave so pri kratkem izrezu večji delež. Visoka kakovost in enaka relativna velikost nista vedno hkrati mogoči. Nespremenjen celoten združljiv posnetek se še vedno kopira identično. Test s sliko 4K in rotacijo je skupaj porabil približno 1.32 GiB v procesih Electron; to je meritev tega preizkusa, ne univerzalna garancija.
 
 Privzete povezave: dejansko odpiranje MKV in OGG po novi sestavi deluje; AVIF še odpre Windowsov izbor programa. SVG je izključen. Splošno prisilno nastavljanje modernih uporabniških privzetih aplikacij brez Windowsovega potrjevanja nima podprtega API-ja. Registracijska skripta zato odpre stran te aplikacije in ne trdi, da je vse že nastavljeno.
+
+---
+
+# Peti pregled — različica 2.2.0, 14. 10. 2026
+
+- Predogled časovnice ima možnost, da širina in višina pomenita največji meri; dejanska velikost sledi razmerju posnetka. Možnost je privzeto vključena.
+- Odtrgani zavihek med vlečenjem uporablja pravo okno velikosti izvornega okna. Zavihek ohrani širino in mesto v vrstici; ob izpustu se animirano premakne levo. Začasno okno se ne zapisuje v zgodovino in med vlečenjem ne podvaja zvoka.
+- Risarski meni ima sive gumbe čez celo vrstico, sredinsko poravnane ikone, ločilne črte in barvne pravokotnike. Od in Do odpirata ločena dialoga. Dvoklik krogeca drsnika odpre natančen vnos trenutne vrednosti.
+- Ikoni obeh puščic sta povezani in pravilno usmerjeni. Končana puščica ohrani narisano krivuljo, brez vsiljenega ravnega segmenta. Smer se posodablja po razdalji narisane poti, ne po številu osvežitev prikaza; obračanje je omejeno in pri nejasni smeri ostane stabilno.
+- Radirka sproti obdeluje nove točke, združuje dogodke miške in na GPU prenaša le spremenjeno območje. Razveljavitev, ponovitev in izvoz še vedno uporabljajo celotno shranjeno risbo.
+- Nova opomba ne obnavlja celotnega seznama in ne preusmeri fokusa na razširjeno polje. Pri menjavi ocene se ohranita višina seznama in položaj drsnika. Opombe in ocene uporabnika so ohranjene. Testna zahteva »tset« je arhivirana.
+- Glavni README in opis izdaj na GitHubu sta v angleščini; slovenska navodila so v README.sl.md.
+
+Preverjanje: 26 jedrnih in FFmpeg testov, sedem preizkusov petega pregleda v Electronu, trije preizkusi opomb na celotnem seznamu, 16 preizkusov prejšnjega pregleda ter kombinirani preizkus izvoza, povečave, obreza in fullscreen. Preverjena sta tudi obnova obeh oken po ponovnem zagonu in sestavljeni paket. Na testni sliki 4K z 80.000 starimi točkami je radirka opravila 140 delnih in nič celotnih prenosov teksture; mediana osvežitve je bila 1,3 ms, 95. percentil 6,5 ms. To so lokalne meritve tega preizkusa. Pri novi opombi je položaj na dolgi strani ostal 11299 px pred in po kliku; tudi preizkus v vgrajenem brskalniku je ohranil položaj. Rezultati, parametri in slike so shranjeni v OUTPUT.

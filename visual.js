@@ -26,7 +26,9 @@
     }
     const points=stroke.points;if(!points?.length)return;ctx.save();ctx.strokeStyle=ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
     const arrow=stroke.arrow&&points.length>1?arrowHead(stroke):null;
-    let body=points;if(arrow){const tip=points.at(-1);let i=points.length-1;while(i>0&&Math.hypot(tip.x-points[i].x,tip.y-points[i].y)<stroke.arrowHeight)i--;body=[...points.slice(0,i+1),stroke.arrowStyle==='open'?arrow.innerTip:arrow.base];ctx.lineCap='butt';}
+    // Keep the recorded curve, including its last bend. A straight connector to
+    // the head's base replaced that bend in the old implementation.
+    const body=points;if(arrow)ctx.lineCap='butt';
     for(let i=1;i<body.length;i++)ctx.lineTo(body[i].x,body[i].y);
     if(points.length===1){ctx.arc(points[0].x,points[0].y,stroke.width/2,0,Math.PI*2);ctx.fill();}else ctx.stroke();
     if(arrow){ctx.beginPath();if(stroke.arrowStyle==='open'){ctx.moveTo(arrow.tip.x,arrow.tip.y);ctx.lineTo(arrow.left.x,arrow.left.y);ctx.lineTo(arrow.leftInner.x,arrow.leftInner.y);ctx.lineTo(arrow.innerTip.x,arrow.innerTip.y);ctx.lineTo(arrow.rightInner.x,arrow.rightInner.y);ctx.lineTo(arrow.right.x,arrow.right.y);ctx.closePath();ctx.fill();}else{ctx.moveTo(arrow.tip.x,arrow.tip.y);ctx.lineTo(arrow.left.x,arrow.left.y);ctx.lineTo(arrow.right.x,arrow.right.y);ctx.closePath();ctx.fill();}}
@@ -35,17 +37,30 @@
   function textFont(t){return `${t.italic?'italic ':''}${t.bold?'bold ':''}${t.fontSize}px "${t.font}", Arial, sans-serif`;}
   function textLines(ctx,t){ctx.font=textFont(t);const lines=[];for(const paragraph of (t.text||'').split('\n')){let line='';for(const ch of paragraph){if(line&&ctx.measureText(line+ch).width>t.boxWidth){lines.push(line);line='';}line+=ch;}lines.push(line);}return lines;}
   function rotateView(sw,sh,w,h,state,degrees){const before=geometry(sw,sh,w,h,state),pivot=state.pivot||{x:w/2,y:h/2},anchor=toScreen(before,pivot);const after=geometry(sw,sh,w,h,{...state,rotation:degrees}),next=toScreen(after,pivot);return {...state.view,x:state.view.x+anchor.x-next.x,y:state.view.y+anchor.y-next.y};}
-  function arrowHead(stroke){
-    const p=stroke.points,tip=p.at(-1);let a=Math.atan2(tip.y-p.at(-2).y,tip.x-p.at(-2).x);
-    if(!stroke.polyline){
-      const length=Math.max(.001,stroke.arrowPersistence||Math.max(stroke.width*16,32)),samples=[tip];let distance=0;for(let i=p.length-2;i>=0&&distance<length;i--){const next=p[i],last=samples.at(-1),segment=Math.hypot(next.x-last.x,next.y-last.y);if(segment<1e-8)continue;if(distance+segment>length){const fraction=(length-distance)/segment;samples.push({x:last.x+(next.x-last.x)*fraction,y:last.y+(next.y-last.y)*fraction});distance=length;break;}samples.push(next);distance+=segment;}
-      // Uniform arc-length samples and a linear tangent fit suppress turns below persistence length.
-      if(distance>1e-6){const count=17,step=distance/(count-1),uniform=[tip];let i=1,passed=0;for(let k=1;k<count;k++){const target=k*step;while(i<samples.length-1&&passed+Math.hypot(samples[i].x-samples[i-1].x,samples[i].y-samples[i-1].y)<target){passed+=Math.hypot(samples[i].x-samples[i-1].x,samples[i].y-samples[i-1].y);i++;}const seg=Math.hypot(samples[i].x-samples[i-1].x,samples[i].y-samples[i-1].y),f=seg?(target-passed)/seg:0;uniform.push({x:samples[i-1].x+(samples[i].x-samples[i-1].x)*f,y:samples[i-1].y+(samples[i].y-samples[i-1].y)*f});}let vx=0,vy=0;for(let k=0;k<count;k++){const weight=k-(count-1)/2;vx-=weight*uniform[k].x;vy-=weight*uniform[k].y;}if(Math.hypot(vx,vy)>1e-8)a=Math.atan2(vy,vx);}
+  const tangentCache=new WeakMap();
+  function stableTangent(stroke){
+    const points=stroke.points,length=Math.max(1,stroke.arrowPersistence||stroke.width*16||64),options=typeof module!=='undefined'?require('./config').drawing:config.drawing;
+    let cache=tangentCache.get(stroke);
+    if(!cache||cache.points!==points||cache.count>points.length||cache.length!==length){cache={points,count:1,length,distance:0,vx:0,vy:0,angle:null};tangentCache.set(stroke,cache);}
+    // Integrate every segment, rather than only segments observed by a repaint.
+    // Exponential spatial averaging has no sliding-window boundary to jump, and
+    // a weak vector on a loop/reversal cannot flip the displayed orientation.
+    for(let i=cache.count;i<points.length;i++){
+      const dx=points[i].x-points[i-1].x,dy=points[i].y-points[i-1].y,ds=Math.hypot(dx,dy);if(ds<1e-8)continue;
+      const tx=dx/ds,ty=dy/ds;if(cache.angle===null){cache.angle=Math.atan2(ty,tx);cache.vx=tx;cache.vy=ty;}
+      if(cache.distance<Math.min(length/4,stroke.width*options.arrowStartupWidths)){cache.distance+=ds;const x=points[i].x-points[0].x,y=points[i].y-points[0].y,n=Math.hypot(x,y);if(n>1e-6){cache.angle=Math.atan2(y,x);cache.vx=x/n;cache.vy=y/n;}continue;}cache.distance+=ds;
+      const steps=Math.max(1,Math.ceil(ds/Math.max(.25,Math.min(2,length/32)))),step=ds/steps,alpha=-Math.expm1(-step/(length*options.arrowSmoothingFraction));
+      for(let k=0;k<steps;k++){cache.vx+=(tx-cache.vx)*alpha;cache.vy+=(ty-cache.vy)*alpha;if(Math.hypot(cache.vx,cache.vy)<options.arrowConfidence)continue;
+        const target=Math.atan2(cache.vy,cache.vx),delta=Math.atan2(Math.sin(target-cache.angle),Math.cos(target-cache.angle));cache.angle+=C.clamp(delta*alpha,-options.arrowTurnRate*step/length,options.arrowTurnRate*step/length);
+      }
     }
-    if(!stroke.polyline){const previous=stroke._arrowDirection,last=stroke._arrowPoint;if(previous!==undefined&&last){const moved=Math.hypot(tip.x-last.x,tip.y-last.y),limit=2*moved/Math.max(stroke.arrowPersistence||64,stroke.width*10),delta=Math.atan2(Math.sin(a-previous),Math.cos(a-previous));a=previous+C.clamp(delta,-limit,limit);}stroke._arrowDirection=a;stroke._arrowPoint={...tip};}
+    cache.count=points.length;return cache.angle??0;
+  }
+  function arrowHead(stroke){
+    const p=stroke.points,tip=p.at(-1);const a=stroke.polyline?Math.atan2(tip.y-p.at(-2).y,tip.x-p.at(-2).x):stableTangent(stroke);
     const h=stroke.arrowHeight,w=stroke.arrowWidth/2,base={x:tip.x-h*Math.cos(a),y:tip.y-h*Math.sin(a)};const left={x:base.x-w*Math.sin(a),y:base.y+w*Math.cos(a)},right={x:base.x+w*Math.sin(a),y:base.y-w*Math.cos(a)},length=Math.hypot(h,w),cos=h/length,sin=w/length,thickness=stroke.width,depth=thickness/Math.max(sin,.0001),innerTip={x:tip.x-depth*Math.cos(a),y:tip.y-depth*Math.sin(a)},leftInner={x:left.x-thickness*sin*Math.cos(a)+thickness*cos*Math.sin(a),y:left.y-thickness*sin*Math.sin(a)-thickness*cos*Math.cos(a)},rightInner={x:right.x-thickness*sin*Math.cos(a)-thickness*cos*Math.sin(a),y:right.y-thickness*sin*Math.sin(a)+thickness*cos*Math.cos(a)};return {tip,base,left,right,innerTip,leftInner,rightInner,angle:a};
   }
   function hsv(h,s,v){const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];return rgb.map(n=>(n+m)*255);}
   function rgb(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;let h=d===0?0:max===r?60*(((g-b)/d)%6):max===g?60*((b-r)/d+2):60*((r-g)/d+4);return [(h+360)%360,max?d/max:0,max];}
-  const api={geometry,toScreen,toSource,zoom,visibleCrop,constrained,draw,textFont,textLines,rotateView,arrowHead,hsv,rgb};if(typeof module!=='undefined')module.exports=api;else root.Visual=api;
+  const api={geometry,toScreen,toSource,zoom,visibleCrop,constrained,draw,textFont,textLines,rotateView,arrowHead,stableTangent,hsv,rgb};if(typeof module!=='undefined')module.exports=api;else root.Visual=api;
 })(typeof window!=='undefined'?window:globalThis);
