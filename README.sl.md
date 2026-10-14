@@ -1,6 +1,6 @@
 # Video Audio Image Viewer
 
-Različica 2.4.0: nastavljiv odmik za odtrganje zavihka, uporaba normalne velikosti okna, neposredno premikanje okna z enim zavihkom in animirano mesto priključitve. Risarski meni ima zaobljene obrobljene gumbe ter dosledne štiri odtenke sive. Puščice imajo ločena drsnika za dolžino poti in najmanjšo prepuščeno valovno dolžino; filter obdeluje obe koordinati poti. Opombe se raztezajo naravno in ohranijo položaj strani. Slike se lepijo neposredno v zahtevo ali posamezno opombo in ostanejo povezane s to fazo pregleda.
+Različica 2.4.0: dve neodvisni okni za risarska orodja in barvo, barvne ikone ter usklajene mere in predogledi. Zavihek se skupaj s posnetkom priključi drugemu oknu že med držanjem miške; izvor takoj pokaže preostali posnetek. Konice puščic ostanejo ostre brez spreminjanja sprejetega filtra. Dodajanje nove zahteve ohrani povsem enak prikaz strani, opombe in slike pa ostanejo povezane s svojo fazo pregleda.
 
 Različica 2.2.0: predogled časovnice lahko tesno sledi razmerju posnetka znotraj največje širine in višine. Pri vlečenju zavihka je viden pravi pregledovalnik v velikosti izvornega okna. Risarski meni ima sive celovrstične gumbe, ločen vnos Od/Do in dvoklik drsnika za točno vrednost. Puščice ohranijo narisano krivuljo in imajo stabilnejšo smer, radirka pa osvežuje samo spremenjeni del slike. Nova opomba ohrani položaj strani. Podrobnosti trenutnega delovanja so tudi v angleškem [README](README.md).
 
