@@ -313,7 +313,7 @@ document.addEventListener('keydown',event=>{
   if(document.activeElement?.matches('input,select,textarea')&&event.code!=='Escape'&&event.code!=='F11'&&!(event.ctrlKey&&['KeyS','KeyO','KeyW','KeyT','Comma','ArrowLeft','ArrowRight'].includes(event.code)))return;
   if($('settings').open){if(event.code==='Escape'){event.preventDefault();$('settings').close();}return;}
   const binding=C.shortcut(event),action=Object.keys(settings.shortcuts).find(key=>settings.shortcuts[key]===binding);
-  if(!action)return;event.preventDefault();if(event.repeat&&['crop','settings','export','open','newTab','restoreTab','closeTab','fillWindow','fullscreen','escape','mute','clearSelection'].includes(action))return;runAction(action);
+  if(!action)return;event.preventDefault();if(event.repeat&&['ocr','copyImage','crop','settings','export','open','newTab','restoreTab','closeTab','fillWindow','fullscreen','escape','mute','clearSelection'].includes(action))return;runAction(action);
 });
 $('settingsButton').addEventListener('click',openSettings);$('closeSettings').addEventListener('click',()=>$('settings').close());$('settings').addEventListener('close',()=>{recording=null;controls();});
 for(const id of ['videoFormat','audioFormat','imageFormat','folderSort','matchSource','folderDescending'])$(id).addEventListener('change',()=>saveSettings({...settings,[id]:$(id).type==='checkbox'?$(id).checked:$(id).value}));
