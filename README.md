@@ -111,3 +111,13 @@ Tests include real FFmpeg exports, inclusive frame boundaries, Unicode, VFR, pix
 The supplied release is Windows x64. Other operating systems require an Electron build and appropriate FFmpeg/FFprobe binaries. Shell integration and VBS launchers are Windows-specific.
 
 See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and the bundled license/source notices for Electron, Chromium and FFmpeg.
+
+## Version 2.4.0
+
+Ctrl+D opens two independent draggable native windows: drawing tools and the shared color picker. Selecting a tool updates the color picker; tool icons use their saved colors, and the selected tool receives a subtle RGB tint (config.drawing.selectedToolTint). The windows remember their positions and synchronize source-pixel sizes, editable ranges, live previews and undo/redo with the owning media tab.
+
+Tab tear-outs reuse a preloaded viewer window and prepare its media at mouse-down. The source shows its next tab immediately. Entering another tab strip attaches the actual media view and a movable provisional tab before mouse-up; leaving reverses the attachment. Spare tab-strip space drags the native window.
+
+Adding a review requirement saves it immediately without changing any visible page pixel or the scroll thumb. Its row is revealed on the next intentional scroll/navigation, or on filtering/reloading. Existing notes and phase-specific screenshots remain intact.
+
+Arrow shafts are clipped to the exact head envelope, preserving the recorded curve and the previously accepted low-pass direction filter.

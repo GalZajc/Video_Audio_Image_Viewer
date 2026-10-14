@@ -44,6 +44,7 @@
     "tabAnimationMs": 150,
     "pivotHitPixels": 12,
     "tabDragPreviewIntervalMs": 16,
+    "tabWarmDelayMs": 200,
     "tabDetachFadeMs": 100,
     "tabDetachLoadTimeoutMs": 4000,
     "tabAttachHeight": 28,
@@ -200,6 +201,8 @@
     "saveDelayMs": 350
   },
   "drawing": {
+    "paletteWindowWidth": 230,
+    "selectedToolTint": 0.08,
     "width": 4,
     "hue": 0,
     "saturation": 1,

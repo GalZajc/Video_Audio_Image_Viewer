@@ -42,24 +42,26 @@ function archiveButton(feature,restore=false){
     if(restore){const row=document.querySelector(`#list [data-id="${feature.id}"]`);row?.scrollIntoView({block:'center',behavior:'instant'});row?.querySelector('.description')?.focus({preventScroll:true});}
   };return button;
 }
+function viewportAnchor(){
+ const top=document.querySelector('header').getBoundingClientRect().bottom;
+ const node=[...document.querySelectorAll('#list .feature,#archive .feature,#promptDetails')].find(el=>el.getBoundingClientRect().bottom>top);
+ return {node,offset:node?.getBoundingClientRect().top,scroll:scrollY};
+}
+function restoreViewport(anchor){
+ const y=anchor.node?.isConnected?scrollY+anchor.node.getBoundingClientRect().top-anchor.offset:anchor.scroll;
+ window.scrollTo({top:y,behavior:'instant'});
+}
 function render(){
+  pendingRequirements=[];
   const scroll=window.scrollY,query=$('search').value.toLocaleLowerCase('sl'),filter=$('filter').value,list=$('list');
   // Keep the document tall while rebuilding status/filter rows. A focused caret
   // otherwise forces layout before deferred textarea sizing and clamps scroll.
   list.style.minHeight=list.scrollHeight+'px';list.replaceChildren();const groups=new Map();const matches=f=>!query||`${f.text} ${f.group} ${noteText(f.id)} ${f.id}`.toLocaleLowerCase('sl').includes(query);
   for(const f of allFeatures()){const e=entry(f.id);if(state.archived.includes(f.id)||!matches(f)||(filter!=='all'&&e.status!==filter))continue;if(!groups.has(f.group))groups.set(f.group,[]);groups.get(f.group).push(f);}
   for(const [group,rows] of groups){
-    const section=document.createElement('section'),heading=document.createElement('h2');heading.textContent=group;section.append(heading);
+    const section=document.createElement('section'),heading=document.createElement('h2');section.dataset.group=group;heading.textContent=group;section.append(heading);
     for(const f of rows){
-      const e=entry(f.id),row=document.createElement('div');row.className=`feature ${e.status}`;row.dataset.id=f.id;
-      const top=document.createElement('div');top.className='featureTop';const desc=document.createElement('div');desc.className='description';desc.textContent=f.text;
-      const id=document.createElement('span');id.className='id';id.textContent=f.id+(f.custom?' · nova zahteva':'');desc.append(id);desc.tabIndex=0;desc.title='Klikni za urejanje zahtevka';desc.setAttribute('role','button');desc.setAttribute('aria-label',`Uredi zahtevek: ${f.text}`);desc.onclick=()=>editDescription(desc,f);desc.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();editDescription(desc,f);}};
-      const status=document.createElement('div');status.className='status';
-      for(const [value,className,label] of [['pass','yes','Deluje'],['assumed','assumed','Nisem preveril, verjetno deluje'],['fail','no','Za popraviti']]){
-        const button=document.createElement('button');button.type='button';button.className=className;button.innerHTML=statusIcon(value);button.setAttribute('aria-pressed',String(e.status===value));button.setAttribute('aria-label',`${label}: ${f.text}`);button.title=`${label} (ponovni klik odstrani oceno)`;button.onclick=()=>{state.entries[f.id]={...entry(f.id),status:entry(f.id).status===value?'todo':value};markDirty();row.className='feature '+entry(f.id).status;for(const control of status.querySelectorAll('button[data-state]'))control.setAttribute('aria-pressed',String(control.dataset.state===entry(f.id).status));const phase=row.querySelector('.notePhase.currentNote');if(phase)phase.hidden=entry(f.id).status!=='fail'&&!entry(f.id).notes&&!entry(f.id).notesHistory?.length&&!ReviewModel.images(entry(f.id),'note',entry(f.id).notesHistory?.length||0).length;const add=row.querySelector('.newNote');if(add&&phase)add.hidden=phase.hidden;};button.dataset.state=value;status.append(button);
-      }
-      status.append(archiveButton(f));top.append(desc,status);row.append(top);
-      row.append(phaseImages(f,'base'),noteControls(f));section.append(row);
+      section.append(featureRow(f));
     }
     list.append(section);
   }
@@ -68,6 +70,17 @@ function render(){
   for(const id of state.archived){const f=allFeatures().find(item=>item.id===id);if(!f||!matches(f))continue;const row=document.createElement('div');row.className='feature archived';row.dataset.id=f.id;const top=document.createElement('div');top.className='featureTop';const desc=document.createElement('div');desc.className='description';desc.textContent=f.text;const group=document.createElement('span');group.className='id';group.textContent=f.group;desc.append(group);const status=document.createElement('div');status.className='status';status.append(archiveButton(f,true));top.append(desc,status);row.append(top);archive.append(row);}
   if(!archive.children.length){const empty=document.createElement('div');empty.className='feature archiveEmpty';empty.textContent=state.archived.length?'Ni arhiviranih zahtevkov za to iskanje.':'Arhiv je prazen.';archive.append(empty);}
   updateSummary();document.querySelectorAll('.notes,.descriptionEditor').forEach(autoHeight);list.style.minHeight='';window.scrollTo({top:scroll,behavior:'instant'});
+}
+function featureRow(f){
+      const e=entry(f.id),row=document.createElement('div');row.className=`feature ${e.status}`;row.dataset.id=f.id;
+      const top=document.createElement('div');top.className='featureTop';const desc=document.createElement('div');desc.className='description';desc.textContent=f.text;
+      const id=document.createElement('span');id.className='id';id.textContent=f.id+(f.custom?' · nova zahteva':'');desc.append(id);desc.tabIndex=0;desc.title='Klikni za urejanje zahtevka';desc.setAttribute('role','button');desc.setAttribute('aria-label',`Uredi zahtevek: ${f.text}`);desc.onclick=()=>editDescription(desc,f);desc.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();editDescription(desc,f);}};
+      const status=document.createElement('div');status.className='status';
+      for(const [value,className,label] of [['pass','yes','Deluje'],['assumed','assumed','Nisem preveril, verjetno deluje'],['fail','no','Za popraviti']]){
+        const button=document.createElement('button');button.type='button';button.className=className;button.innerHTML=statusIcon(value);button.setAttribute('aria-pressed',String(e.status===value));button.setAttribute('aria-label',`${label}: ${f.text}`);button.title=`${label} (ponovni klik odstrani oceno)`;button.onclick=()=>{state.entries[f.id]={...entry(f.id),status:entry(f.id).status===value?'todo':value};markDirty();row.className='feature '+entry(f.id).status;for(const control of status.querySelectorAll('button[data-state]'))control.setAttribute('aria-pressed',String(control.dataset.state===entry(f.id).status));const phase=row.querySelector('.notePhase.currentNote');if(phase)phase.hidden=entry(f.id).status!=='fail'&&!entry(f.id).notes&&!entry(f.id).notesHistory?.length&&!ReviewModel.images(entry(f.id),'note',entry(f.id).notesHistory?.length||0).length;const add=row.querySelector('.newNote');if(add&&phase)add.hidden=phase.hidden;};button.dataset.state=value;status.append(button);
+      }
+      status.append(archiveButton(f));top.append(desc,status);row.append(top);
+      row.append(phaseImages(f,'base'),noteControls(f));return row;
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function phaseImages(feature,phase,note){
@@ -97,13 +110,39 @@ document.addEventListener('paste',event=>{
  const row=event.target.closest('.feature')||document.activeElement?.closest('.feature'),phase=event.target.closest('.notePhase')||document.activeElement?.closest('.notePhase'),box=phase?.querySelector('.phaseImages')||row?.querySelector('.phaseImages[data-phase="base"]');if(box?._upload){event.preventDefault();box._upload(files);}
 });
 let draftImages=[],draftGeneration=0;
+let pendingRequirements=[];
+function revealPendingRequirements(){
+ if(!pendingRequirements.length)return;
+ const anchor=viewportAnchor(),query=$('search').value.toLocaleLowerCase('sl'),filter=$('filter').value;
+ for(const f of pendingRequirements){
+  if((filter==='all'||filter==='fail')&&(!query||(f.text+' '+f.group+' '+f.id).toLocaleLowerCase('sl').includes(query))){
+   const list=$('list');list.querySelector('.empty')?.remove();
+   let section=[...list.children].find(el=>el.dataset.group===f.group);
+   if(!section){section=document.createElement('section');section.dataset.group=f.group;const h=document.createElement('h2');h.textContent=f.group;section.append(h);list.append(section);}
+   if(!document.querySelector(`[data-id="${f.id}"]`))section.append(featureRow(f));
+  }
+ }
+ pendingRequirements=[];restoreViewport(anchor);
+}
+// Saving a new requirement must leave even the scroll thumb unchanged. Reveal
+// its row on the next intentional navigation, rather than moving this viewport.
+document.addEventListener('wheel',revealPendingRequirements,{passive:true});
+document.addEventListener('keydown',event=>{if(!$('newFeatureDialog').open&&['PageDown','PageUp','Home','End','ArrowDown','ArrowUp'].includes(event.key))revealPendingRequirements();});
+document.addEventListener('pointerdown',event=>{if(event.clientX>=document.documentElement.clientWidth)revealPendingRequirements();});
 async function uploadDraftImages(files){const generation=draftGeneration;$('add').disabled=true;try{for(const file of files){if(file.size>12582912)throw Error('Največ 12 MB na sliko.');if(draftImages.length>=20)throw Error('Največ 20 slik na zahtevek.');const response=await fetch('/api/screenshot',{method:'POST',headers:{'Content-Type':file.type,'X-Review-Token':token},body:file}),result=await response.json();if(!response.ok)throw Error(result.error);if(generation!==draftGeneration||!$('newFeatureDialog').open)return;const image={url:result.url,name:file.name,phase:'base'};draftImages.push(image);const item=document.createElement('span');item.className='screenshot';const img=document.createElement('img');img.src=image.url;img.alt=image.name;const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.onclick=()=>{draftImages=draftImages.filter(s=>s!==image);item.remove();};item.append(img,remove);$('newFeatureImages').append(item);}}catch(error){const message=document.createElement('span');message.className='uploadStatus';message.textContent=error.message;$('newFeatureImages').append(message);}finally{if(generation===draftGeneration)$('add').disabled=false;}}
 $('newRequest').onclick=()=>{draftGeneration++;draftImages=[];$('newFeatureImages').replaceChildren();$('add').disabled=false;$('newFeatureDialog').showModal();$('newFeature').focus();};$('cancelNewFeature').onclick=()=>$('newFeatureDialog').close();
 $('newFeatureDialog').addEventListener('click',event=>{if(event.target===$('newFeatureDialog')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close();}});
 
 
 $('search').oninput=render;$('filter').onchange=render;
-$('add').onclick=()=>{const text=$('newFeature').value.trim();if(!text)return;const id='custom-'+crypto.randomUUID();state.custom.push({id,text});state.entries[id]={status:'fail',notes:'',screenshots:[...draftImages]};draftImages=[];$('newFeature').value='';$('newFeatureDialog').close();$('search').value='';$('filter').value='all';markDirty();render();document.querySelector(`[data-id="${id}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});};
+$('add').onclick=()=>{
+ const text=$('newFeature').value.trim();if(!text)return;
+ const anchor=viewportAnchor(),id='custom-'+crypto.randomUUID(),f={id,text,group:'Dodatne zahteve',custom:true};
+ state.custom.push({id,text});state.entries[id]={status:'fail',notes:'',screenshots:[...draftImages]};
+ draftImages=[];$('newFeature').value='';$('newFeatureDialog').close();
+ pendingRequirements.push(f);
+ markDirty();restoreViewport(anchor);
+};
 $('copy').onclick=async()=>{await saveNow();try{await navigator.clipboard.writeText(nextPrompt());$('copy').textContent='Zkopirano ✓';setTimeout(()=>$('copy').textContent='Kopiraj naslednji prompt',1800);}catch{$('promptDetails').open=true;$('prompt').focus();$('prompt').select();}};
 $('download').onclick=async()=>{await saveNow();download('Video Audio Image Viewer - naslednji prompt.md',nextPrompt(),'text/markdown;charset=utf-8');};
 $('backup').onclick=()=>download('Video Audio Image Viewer - pregled.json',JSON.stringify({schemaVersion:1,state,features:allFeatures(),prompt:nextPrompt()},null,2),'application/json;charset=utf-8');

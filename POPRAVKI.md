@@ -83,3 +83,10 @@ Preverjanje: 26 jedrnih in FFmpeg testov, sedem preizkusov petega pregleda v Ele
 - Slike se lepijo neposredno v polje osnovne zahteve ali posamezne opombe, tudi v pojavnem oknu za novo zahtevo. Ostanejo vezane na svojo fazo, tudi ko opomba postane zgodovinska. Štiri znane stare slike so povezane z ustreznimi opombami, preostale neoznačene slike ostanejo pri osnovni zahtevi. Ocene, besedila in arhiv uporabnika so ohranjeni.
 
 Preverjanje vključuje dejanske vnose miške pri priključevanju zavihkov in risanju tresoče poti, dva prikaza dolge preglednice različnih širin, več zaporednih opomb, slike v trenutni in zgodovinski opombi, obnovo po ponovnem nalaganju ter nastanek naslednjega prompta. V vgrajenem brskalniku je položaj po dolgi opombi ostal 23655 px, po opombi s sliko pa 23816 px; prilepljena slika iz odložišča se je shranila v pravo fazo. Ločene testne kopije so v OUTPUT in niso del uporabnikovih ocen.
+
+## 2.4.0 — sedmi pregled
+
+- Dve neodvisni risarski okni, usklajene barve, barvne ikone in rahlo obarvan izbrani gumb; zaobljeni robovi brez črnega ločila, poravnani daljši drsniki.
+- Dejanska priključitev zavihka in vsebine že pred izpustom miške, takojšnja menjava vsebine izvora, pripravljeno okno za hitrejše iztrganje, premikanje skozi prazen del vrstice.
+- Ostra konica obeh vrst puščic brez spreminjanja uspešnega filtra.
+- Nova zahteva brez skoka in brez spremembe slike strani; obe testni zahtevi trajno odstranjeni.

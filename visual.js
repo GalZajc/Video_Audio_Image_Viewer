@@ -24,13 +24,26 @@
     if(stroke.kind==='text'){
       if(!stroke.text)return;ctx.save();const ax=stroke.axisX||{x:1,y:0},ay=stroke.axisY||{x:0,y:1};ctx.transform(ax.x,ax.y,ay.x,ay.y,stroke.x,stroke.y);ctx.fillStyle=stroke.color;ctx.font=textFont(stroke);ctx.textBaseline='top';let y=0;for(const line of textLines(ctx,stroke)){ctx.fillText(line,0,y);y+=stroke.fontSize;}ctx.restore();return;
     }
-    const points=stroke.points;if(!points?.length)return;ctx.save();ctx.strokeStyle=ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+    const points=stroke.points;if(!points?.length)return;ctx.save();ctx.strokeStyle=ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';
     const arrow=stroke.arrow&&points.length>1?arrowHead(stroke):null;
+    if(arrow){
+      // Taper only the drawn coverage at the head. The recorded curve and its
+      // accepted low-pass tangent remain untouched. This envelope contains the
+      // entire shaft behind the head base and the exact outer triangle in front,
+      // preventing a thick/oblique terminal stroke from crossing either apex.
+      const h=stroke.arrowHeight,w=stroke.arrowWidth/2,c=Math.cos(arrow.angle),s=Math.sin(arrow.angle);
+      let extent=Math.max(h,w,stroke.width)*2+1;for(const p of points)extent=Math.max(extent,Math.hypot(p.x-arrow.tip.x,p.y-arrow.tip.y)+stroke.width*2+1);
+      ctx.save();ctx.beginPath();for(const [i,p] of [[-extent,-extent],[-h,-extent],[-h,-w],[0,0],[-h,w],[-h,extent],[-extent,extent]].entries()){
+        const x=arrow.tip.x+p[0]*c-p[1]*s,y=arrow.tip.y+p[0]*s+p[1]*c;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }ctx.closePath();ctx.clip();
+    }
+    ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
     // Keep the recorded curve, including its last bend. A straight connector to
     // the head's base replaced that bend in the old implementation.
     const body=points;if(arrow)ctx.lineCap='butt';
     for(let i=1;i<body.length;i++)ctx.lineTo(body[i].x,body[i].y);
     if(points.length===1){ctx.arc(points[0].x,points[0].y,stroke.width/2,0,Math.PI*2);ctx.fill();}else ctx.stroke();
+    if(arrow)ctx.restore();
     if(arrow){ctx.beginPath();if(stroke.arrowStyle==='open'){ctx.moveTo(arrow.tip.x,arrow.tip.y);ctx.lineTo(arrow.left.x,arrow.left.y);ctx.lineTo(arrow.leftInner.x,arrow.leftInner.y);ctx.lineTo(arrow.innerTip.x,arrow.innerTip.y);ctx.lineTo(arrow.rightInner.x,arrow.rightInner.y);ctx.lineTo(arrow.right.x,arrow.right.y);ctx.closePath();ctx.fill();}else{ctx.moveTo(arrow.tip.x,arrow.tip.y);ctx.lineTo(arrow.left.x,arrow.left.y);ctx.lineTo(arrow.right.x,arrow.right.y);ctx.closePath();ctx.fill();}}
     ctx.restore();
   }

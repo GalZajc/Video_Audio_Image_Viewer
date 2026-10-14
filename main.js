@@ -15,6 +15,7 @@ protocol.registerSchemesAsPrivileged([{scheme:'media',privileges:{standard:true,
 let win,ready=false,exporting=false,pending=[],state={tabs:[],active:0,closed:[],history:[]},settings;
 let writeQueue=Promise.resolve();
 const windowContexts=new Map(),releaseRequests=new Set();let quitting=false,quitContexts=[],quitActive=null,quitFlushed=false;
+const toolWindows=require('./tool-windows-main')({ipcMain,screen,defaults,contextFor,data});
 function setFullscreen(value,target=win){
   target._fullscreenQueue=(target._fullscreenQueue||Promise.resolve()).catch(()=>{}).then(()=>new Promise(resolve=>{if((target._fullscreenState||false)===value)return resolve(value);const event=value?'enter-full-screen':'leave-full-screen';let timer;const done=()=>{clearTimeout(timer);target.removeListener(event,done);target._fullscreenState=value;resolve(value);};target.once(event,done);timer=setTimeout(()=>{target.removeListener(event,done);target._fullscreenState=target.isFullScreen();target.webContents.send('fullscreen',target._fullscreenState);resolve(target._fullscreenState);},defaults.window.transitionTimeoutMs);target.setFullScreen(value);}));return target._fullscreenQueue;
 }
@@ -30,8 +31,8 @@ function createWindow(saved={tabs:[],active:0,closed:[],history:[]},bounds=null,
   created.on('focus',()=>{if(!ctx.temporary)win=created;});created.webContents.setWindowOpenHandler(()=>({action:'deny'}));created.webContents.on('will-navigate',e=>e.preventDefault());created.on('maximize',()=>created.webContents.send('maximized',true));created.on('unmaximize',()=>created.webContents.send('maximized',false));
   created._fullscreenState=false;for(const event of ['enter-full-screen','leave-full-screen'])created.on(event,()=>{created._fullscreenState=event==='enter-full-screen';created.webContents.send('fullscreen',created._fullscreenState);});
   created.on('close',event=>{ctx.bounds=created.getBounds();ctx.normalBounds=created.getNormalBounds();ctx.maximized=created.isMaximized();ctx.fullscreen=created.isFullScreen();if(exporting){event.preventDefault();dialog.showMessageBox(created,{type:'info',message:'Izvoz še poteka.',buttons:['V redu']});}});
-  const id=created.webContents.id;created.on('closed',()=>{windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting&&!ctx.temporary)saveWindows(ctx);sweepReleases();});
-  ctx.loaded=created.loadFile(path.join(__dirname,'index.html')).then(async()=>{if(saved.maximized)created.maximize();if(saved.fullscreen)await setFullscreen(true,created);if(process.env.VAP_TEST_MODE==='1')created.hide();return created;});return created;
+  const id=created.webContents.id;created.on('closed',()=>{windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting&&!ctx.temporary)saveWindows(ctx);sweepReleases();if(!quitting&&!ctx.temporary&&!liveWindows().length){toolWindows.destroyToolWindows();app.quit();}});
+  ctx.loaded=created.loadFile(path.join(__dirname,'index.html')).then(async()=>{if(saved.maximized)created.maximize();if(saved.fullscreen)await setFullscreen(true,created);if(process.env.VAP_TEST_MODE==='1')created.hide();return created;}).catch(error=>{if(created.isDestroyed())return created;throw error;});return created;
 }
 function load(name,fallback){try{return JSON.parse(fs.readFileSync(path.join(data,name),'utf8'));}catch{return fallback;}}
 function persist(name,value){const bytes=JSON.stringify(value,null,2);writeQueue=writeQueue.catch(()=>{}).then(async()=>{const file=path.join(data,name);await fs.promises.writeFile(file+'.tmp',bytes,'utf8');await fs.promises.rename(file+'.tmp',file);});return writeQueue;}
@@ -152,9 +153,9 @@ ipcMain.handle('delete-file',async(_event,request)=>{
 });
 ipcMain.on('window',(_event,action)=>{const win=contextFor(_event).window;if(action==='minimize')win.minimize();if(action==='maximize')win.isMaximized()?win.unmaximize():win.maximize();if(action==='close')win.close();});
 app.on('window-all-closed',()=>{Media.shutdown();writeQueue.finally(()=>app.quit());});
-app.on('before-quit',()=>{if(!quitting){quitting=true;quitContexts=liveWindows();quitActive=win;if(quitContexts.length)saveWindows();}Media.shutdown();});
+app.on('before-quit',()=>{if(!quitting){quitting=true;quitContexts=liveWindows();quitActive=win;if(quitContexts.length)saveWindows();}toolWindows.destroyToolWindows();Media.shutdown();});
 app.on('will-quit',event=>{if(quitFlushed)return;event.preventDefault();writeQueue.finally(()=>{quitFlushed=true;app.quit();});});
-module.exports={getWindow:()=>win,getWindows:()=>liveWindows().map(c=>c.window),createWindow,routeFiles,fileArgs};
+module.exports={getWindow:()=>win,getWindows:()=>liveWindows().map(c=>c.window),createWindow,routeFiles,fileArgs,...toolWindows};
 
 Object.assign(module.exports,require('./tab-windows-main')({ipcMain,screen,defaults,contextFor,liveWindows,windowContexts,createWindow,saveWindows,setFullscreen}));
 

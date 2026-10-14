@@ -1,6 +1,6 @@
 # Video Audio Image Viewer
 
-Različica 2.3.0: nastavljiv odmik za odtrganje zavihka, uporaba normalne velikosti okna, neposredno premikanje okna z enim zavihkom in animirano mesto priključitve. Risarski meni ima zaobljene obrobljene gumbe ter dosledne štiri odtenke sive. Puščice imajo ločena drsnika za dolžino poti in najmanjšo prepuščeno valovno dolžino; filter obdeluje obe koordinati poti. Opombe se raztezajo naravno in ohranijo položaj strani. Slike se lepijo neposredno v zahtevo ali posamezno opombo in ostanejo povezane s to fazo pregleda.
+Različica 2.4.0: nastavljiv odmik za odtrganje zavihka, uporaba normalne velikosti okna, neposredno premikanje okna z enim zavihkom in animirano mesto priključitve. Risarski meni ima zaobljene obrobljene gumbe ter dosledne štiri odtenke sive. Puščice imajo ločena drsnika za dolžino poti in najmanjšo prepuščeno valovno dolžino; filter obdeluje obe koordinati poti. Opombe se raztezajo naravno in ohranijo položaj strani. Slike se lepijo neposredno v zahtevo ali posamezno opombo in ostanejo povezane s to fazo pregleda.
 
 Različica 2.2.0: predogled časovnice lahko tesno sledi razmerju posnetka znotraj največje širine in višine. Pri vlečenju zavihka je viden pravi pregledovalnik v velikosti izvornega okna. Risarski meni ima sive celovrstične gumbe, ločen vnos Od/Do in dvoklik drsnika za točno vrednost. Puščice ohranijo narisano krivuljo in imajo stabilnejšo smer, radirka pa osvežuje samo spremenjeni del slike. Nova opomba ohrani položaj strani. Podrobnosti trenutnega delovanja so tudi v angleškem [README](README.md).
 
@@ -132,3 +132,13 @@ Pri vleku zavihka zunaj okna mu sledi vidno predogledno okence. Izvor ostane odp
 Časovnica in spodnji čas ne prikazujeta tisočink. Oznaki Povečava in Hitrost sta odstranjeni; kratko obvestilo ob spremembi hitrosti ostane levo zgoraj. Nova opomba spreminja samo svojo vrstico, zato ne sesuje višine celotne preglednice ali premakne pogleda na dno.
 
 Izvorna različica za razvoj potrebuje Node.js. Z dvojnim klikom `setup_and_run.bat` se prenese preverjena izdaja FFmpeg, namestijo odvisnosti in sestavi aplikacija. Preneseni ZIP in razširjene odvisnosti ostanejo znotraj projekta. Že sestavljena prenosljiva izdaja ne potrebuje Node.js ali ločenega FFmpeg. `DATA`, `OUTPUT`, lokalne bližnjice in osebni pregledi niso del javnega repozitorija oziroma izdaje.
+
+## Različica 2.4.0
+
+Ctrl+D odpre dve neodvisni, premakljivi okni za risarska orodja in izbiro barve. Menjava orodja posodobi barvno okno, ikone imajo barvo svojega orodja, izbrani gumb pa rahel RGB odtenek. Okni si zapomnita položaj; mere, razponi, predogled in razveljavitve se usklajujejo s posnetkom.
+
+Iztrganje zavihka uporabi vnaprej pripravljeno okno. Izvorno okno takoj pokaže naslednji zavihek; ob prihodu v drugo vrstico se že med držanjem miške prikažeta dejanski zavihek in posnetek. Prazen del vrstice omogoča premikanje okna.
+
+Nova zahteva se takoj shrani brez spremembe prikazanih pikslov ali drsnika. Njena vrstica se pokaže ob naslednjem premiku po seznamu, filtriranju ali osvežitvi. Opombe in pripadajoče slike se ohranijo.
+
+Črta puščice je omejena na natančen obris konice; posneto krivuljo in sprejeti filter smeri ohrani.
