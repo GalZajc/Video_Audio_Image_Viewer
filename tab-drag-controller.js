@@ -12,7 +12,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
  function clearTarget(drag){if(drag.target&&!drag.target.window.isDestroyed())drag.target.window.webContents.send('tab-drag-target',null);drag.target=null;drag.targetIndex=null;}
  function dispose(drag){
   clearInterval(drag.timer);clearTarget(drag);drag.sender.removeListener('destroyed',drag.cleanup);if(candidates.get(drag.sourceId)===drag)candidates.delete(drag.sourceId);
-  if(drag.single&&!drag.window.isDestroyed())drag.window.setOpacity(1);
+  if(!drag.window.isDestroyed()){drag.window.setOpacity(1);drag.window.setAlwaysOnTop(drag.wasOnTop);}
   if(!drag.single&&!drag.promoted&&!drag.window.isDestroyed()){
    drag.window.hide();drag.window.setOpacity(1);drag.ctx.state={tabs:[],active:0,closed:[],history:[]};drag.ctx.dragPresentation=null;
    drag.window.webContents.send('tab-drag-reset');
@@ -20,13 +20,13 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
   }
  }
  function targetAt(drag,p){return liveWindows().find(c=>{if(c===drag.source||c.window.isMinimized())return false;const b=c.window.getBounds();return p.x>=b.x&&p.x<b.x+b.width-128&&p.y>=b.y&&p.y<b.y+defaults.view.tabAttachHeight;});}
- function reveal(drag){if(!drag.outside||drag.window.isDestroyed()||drag.target)return;drag.visible=true;drag.window.setOpacity(1);if(!drag.single)drag.window.showInactive();}
+ function reveal(drag){if(!drag.outside||drag.window.isDestroyed()||drag.target)return;const first=!drag.visible;drag.visible=true;drag.window.setOpacity(1);drag.window.setAlwaysOnTop(true,'floating');if(!drag.single&&!drag.window.isVisible())drag.window.showInactive();if(first)drag.window.moveTop();}
  function update(drag){
   if(drag.window.isDestroyed())return;const p=point(drag),target=drag.outside?targetAt(drag,p):null;
   if(target!==drag.target){clearTarget(drag);drag.target=target;drag.lastTargetX=null;}
   if(target){const b=target.window.getBounds(),x=p.x-b.x;
-   if(drag.lastTargetX===null||Math.abs(x-drag.lastTargetX)>=1){drag.lastTargetX=x;target.window.webContents.send('tab-drag-target',{sourceId:drag.sourceId,x,offset:drag.offset,title:path.basename(drag.tab.path),kind:drag.kind,tab:drag.tab});}
-   drag.window.setOpacity(0);
+   if(drag.lastTargetX===null||Math.abs(x-drag.lastTargetX)>=1){drag.lastTargetX=x;target.window.webContents.send('tab-drag-target',{sourceId:drag.sourceId,x,offset:drag.offset,fraction:drag.fraction,title:path.basename(drag.tab.path),kind:drag.kind,tab:drag.tab});}
+   drag.window.setOpacity(0);drag.visible=false;
   }else{
    if(drag.outside)drag.window.setPosition(Math.round(p.x-drag.grabX),Math.round(p.y-drag.grabY));
    if(drag.readyResolved)reveal(drag);
@@ -45,7 +45,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
    let ctx,target;if(single){target=source.window;ctx=source;}else{
     if(!spare||spare.window.isDestroyed())warm();ctx=spare;spare=null;target=ctx.window;target.setBounds(b);ctx.dragPresentation=presentation;
    }
-   drag={source,sourceId:id,sender:event.sender,window:target,ctx,tab:value.tab,kind:value.kind,point:value,offset:value.offset||0,grabX:value.grabX,grabY:value.grabY,outside:!!value.visible,single,visible:false,promoted:false,timer:null,target:null};
+   drag={source,sourceId:id,sender:event.sender,window:target,ctx,tab:value.tab,kind:value.kind,point:value,offset:value.offset||0,fraction:value.fraction??.5,wasOnTop:target.isAlwaysOnTop(),grabX:value.grabX,grabY:value.grabY,outside:!!value.visible,single,visible:false,promoted:false,timer:null,target:null};
    drag.cleanup=()=>dispose(drag);candidates.set(id,drag);
    drag.ready=ctx.loaded.then(async()=>{
     if(candidates.get(id)!==drag)return;
@@ -70,7 +70,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
   if(!target&&candidate){
    candidate.promoted=true;target=candidate.ctx;target.temporary=false;target.dragPresentation=null;target.state.tabs=[tab];
    clearInterval(candidate.timer);candidate.sender.removeListener('destroyed',candidate.cleanup);candidates.delete(candidate.sourceId);
-   target.window.setOpacity(1);target.window.setIgnoreMouseEvents(false);target.window.setFocusable(true);target.window.setSkipTaskbar(false);target.window.webContents.send('tab-drag-presentation',{commit:tab});scheduleWarm();
+   target.window.setOpacity(1);target.window.setAlwaysOnTop(candidate.wasOnTop);target.window.setIgnoreMouseEvents(false);target.window.setFocusable(true);target.window.setSkipTaskbar(false);target.window.webContents.send('tab-drag-presentation',{commit:tab});scheduleWarm();
   }else if(target){
    const index=candidate?.targetIndex??Math.min(target.state.tabs.length,Math.max(0,Math.floor((x-target.window.getBounds().x)/192)));target.state.tabs.splice(index,0,tab);target.window.webContents.send('receive-tab',{tab,index});
    if(candidate){candidate.target=null;dispose(candidate);}

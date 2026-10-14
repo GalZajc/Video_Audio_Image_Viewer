@@ -31,12 +31,21 @@ function renderTabs(){
       if(event.button!==0||event.target.closest('.x,.mediaIcons'))return;
       if(current()!==tab)activate(tabs.indexOf(tab));capture();
       const element=[...$('tabs').children].find(e=>e._tab===tab),bounds=element.getBoundingClientRect();
-      tabDrag={tab,element,startX:event.clientX,startY:event.clientY,offset:event.clientX-bounds.left,originalLeft:bounds.left,single:tabs.length===1,moved:false,candidate:true};element.setPointerCapture(event.pointerId);
-      window.player.tabDragPreview({phase:'begin',visible:false,single:tabDrag.single,tab:serial(tab),kind:tab.meta.kind,left:bounds.left,width:bounds.width,offset:tabDrag.offset,grabX:event.clientX,grabY:event.clientY,x:event.screenX,y:event.screenY});
+      tabDrag={tab,element,startX:event.clientX,startY:event.clientY,offset:event.clientX-bounds.left,fraction:(event.clientX-bounds.left)/bounds.width,originalLeft:bounds.left,single:tabs.length===1,moved:false,candidate:true};element.setPointerCapture(event.pointerId);
+      window.player.tabDragPreview({phase:'begin',visible:false,single:tabDrag.single,tab:serial(tab),kind:tab.meta.kind,left:bounds.left,width:bounds.width,offset:tabDrag.offset,fraction:tabDrag.fraction,grabX:event.clientX,grabY:event.clientY,x:event.screenX,y:event.screenY});
     });
     $('tabs').append(el);
   });
   applyTabWindowPresentation();applyDockPresentation();
+}
+function tabSwapIndex(tab,pointerX,fraction){
+ const elements=[...$('tabs').children].filter(e=>e._tab),element=elements.find(e=>e._tab===tab),index=tabs.indexOf(tab);
+ if(!element||index<0)return index;
+ const center=pointerX+(0.5-fraction)*element.offsetWidth,slot=element.offsetLeft+element.offsetWidth/2,ratio=config.view.tabSwapFraction;
+ let target=index;
+ for(let i=index+1;i<elements.length;i++){const other=elements[i],threshold=slot+(other.offsetLeft+other.offsetWidth/2-slot)*ratio;if(center>threshold)target=i;else break;}
+ if(target===index)for(let i=index-1;i>=0;i--){const other=elements[i],threshold=slot+(other.offsetLeft+other.offsetWidth/2-slot)*ratio;if(center<threshold)target=i;else break;}
+ return target;
 }
 function reorderTab(tab,position){
   const positions=new Map([...$('tabs').children].map(el=>[el,el.offsetLeft]));
@@ -60,8 +69,8 @@ document.addEventListener('pointermove',event=>{
   }
   if(tabDrag.neighborShown){tabDrag.neighborShown=false;tabDrag.element.classList.remove('sourceDragging');activate(tabs.indexOf(tabDrag.tab));}
   tabDrag.element.style.transform=`translateX(${event.clientX-tabDrag.offset-tabDrag.element.offsetLeft}px)`;
-  const siblings=[...$('tabs').children].filter(el=>el._tab!==tabDrag.tab);
-  const target=siblings.filter(el=>{return event.clientX>el.offsetLeft+el.offsetWidth/2;}).length;
+  const target=tabSwapIndex(tabDrag.tab,event.clientX,tabDrag.fraction);
+
   if(target!==tabs.indexOf(tabDrag.tab))reorderTab(tabDrag.tab,target);tabDrag.element.style.transform=`translateX(${event.clientX-tabDrag.offset-tabDrag.element.offsetLeft}px)`;
 });
 async function finishTabDrag(event){

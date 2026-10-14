@@ -16,17 +16,17 @@ window.player.onTabDragPresentation(value=>{const el=$('tabs').firstElementChild
 let tabDockPresentation=null;
 function tabRects(){return new Map([...$('tabs').children].filter(e=>e._tab).map(e=>[e._tab,e.getBoundingClientRect()]));}
 function animateDockedTabs(before,incoming=null,preview=null){for(const element of $('tabs').children){if(!element._tab)continue;const old=element._tab===incoming?preview:before.get(element._tab),next=element.getBoundingClientRect();if(old&&(element._tab===incoming||Math.abs(old.left-next.left)>.5||Math.abs(old.width-next.width)>.5))element.animate([{transform:'translateX('+(old.left-next.left)+'px)',width:old.width+'px',opacity:element._tab===incoming?.6:1},{transform:'translateX(0)',width:next.width+'px',opacity:1}],{duration:config.view.tabAnimationMs,easing:'ease-out'});}}
-function applyDockPresentation(){const d=tabDockPresentation,el=d?.tab&&[...$('tabs').children].find(e=>e._tab===d.tab);if(!el)return;el.classList.add('dockedDragging');const left=C.clamp(d.x-d.offset,0,$('tabs').clientWidth-el.offsetWidth);el.style.transform=`translateX(${left-el.offsetLeft}px)`;}
+function applyDockPresentation(){const d=tabDockPresentation,el=d?.tab&&[...$('tabs').children].find(e=>e._tab===d.tab);if(!el)return;el.classList.add('dockedDragging');const left=C.clamp(d.x-d.fraction*el.offsetWidth,0,$('tabs').clientWidth-el.offsetWidth);el.style.transform=`translateX(${left-el.offsetLeft}px)`;}
 let dockGeneration=0;
 window.player.onTabDragTarget(async value=>{
  if(!value){dockGeneration++;const d=tabDockPresentation;tabDockPresentation=null;if(d?.tab){const before=tabRects(),selected=d.previous,index=tabs.indexOf(d.tab);if(index>=0)tabs.splice(index,1);active=-1;if(tabs.length)activate(Math.max(0,tabs.indexOf(selected)));renderTabs();animateDockedTabs(before);persistSoon();}return;}
- if(tabDockPresentation?.sourceId===value.sourceId){Object.assign(tabDockPresentation,{x:value.x,offset:value.offset});if(tabDockPresentation.tab)positionDockedTab();return;}
- const generation=++dockGeneration,previous=current();tabDockPresentation={...value,previous,tab:null};
+ if(tabDockPresentation?.sourceId===value.sourceId){Object.assign(tabDockPresentation,{x:value.x,offset:value.offset,fraction:value.fraction??.5});if(tabDockPresentation.tab)positionDockedTab();return;}
+ const generation=++dockGeneration,previous=current();tabDockPresentation={...value,fraction:value.fraction??.5,previous,tab:null};
  try{const meta=await window.player.describe(value.tab.path);if(generation!==dockGeneration)return;
   const before=tabRects(),state={...fresh(),...value.tab,playing:false};delete state.path;delete state.size;delete state.mtime;delete state.folderStates;
   const tab={meta,state,proxyUrl:null,preparing:false,provisional:true,...(value.tab.folderStates?{folderStates:new Map(value.tab.folderStates)}:{})};tabDockPresentation.tab=tab;
   const index=[...$('tabs').children].filter(el=>tabDockPresentation.x>el.offsetLeft+el.offsetWidth/2).length;tabs.splice(index,0,tab);tabDockPresentation.index=index;active=-1;activate(index);animateDockedTabs(before);positionDockedTab();
  }catch(error){showError(error);}
 });
-function positionDockedTab(){const d=tabDockPresentation;if(!d?.tab)return;const siblings=[...$('tabs').children].filter(e=>e._tab&&e._tab!==d.tab),index=siblings.filter(e=>d.x>e.offsetLeft+e.offsetWidth/2).length;
+function positionDockedTab(){const d=tabDockPresentation;if(!d?.tab)return;const index=tabSwapIndex(d.tab,d.x,d.fraction);
  if(index!==tabs.indexOf(d.tab))reorderTab(d.tab,index);d.index=index;applyDockPresentation();window.player.tabDragTargetPosition({sourceId:d.sourceId,index});}

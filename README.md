@@ -121,3 +121,17 @@ Tab tear-outs reuse a preloaded viewer window and prepare its media at mouse-dow
 Adding a review requirement saves it immediately without changing any visible page pixel or the scroll thumb. Its row is revealed on the next intentional scroll/navigation, or on filtering/reloading. Existing notes and phase-specific screenshots remain intact.
 
 Arrow shafts are clipped to the exact head envelope, preserving the recorded curve and the previously accepted low-pass direction filter.
+
+## Version 2.5.0
+
+Detached tabs remain above ordinary windows while held and return to normal stacking after release. Local and docked reordering share the same half-slot threshold; the grab position scales with a tab when its width changes.
+
+Drawing/color windows stay on top, size tightly around their contents (maximum 1000 px or the available screen height), and match the preview width to the tool buttons. Numeric dialogs accept Enter without leaving focus outlines, and number spinners fit their fields.
+
+Each tab stores its selected tool, values and colors in its session state. Native viewer focus changes immediately update both tool windows; tabs with drawing disabled hide them. Settings can instead keep one shared tool profile across all tabs and windows. Tool commands carry the viewer and tab identity, so a late event cannot edit a newly selected tab.
+
+Each freehand line/arrow tool has a separate whole-curve smoothing wavelength, in source pixels; zero disables it. The spatial Gaussian filter anchors both endpoints, uses odd boundary reflection and caches unchanged history. Integrated sampling bins avoid aliasing with large wavelengths. Polylines retain their straight segments. The original arrow-direction low-pass filter is unchanged.
+
+Filled triangular heads optionally align to the displayed curve where it crosses their base. The fixed-point iteration uses a small angular tolerance, damping and a finite iteration limit; degenerate curves keep the best available estimate.
+
+The shaft mask is restricted to the apex neighborhood. Earlier bends remain visible instead of being clipped by a rotating global half-plane. The same geometry and smoothing are used in previews, live drawing, retained history and raster export.

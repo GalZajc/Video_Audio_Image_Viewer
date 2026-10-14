@@ -35,7 +35,7 @@ dialog{border-radius:12px;box-shadow:0 8px 36px #0009}input{font:inherit;color:i
 #rotationValue{font-family:Consolas,monospace;width:7ch;min-width:7ch}
 
 #settingsButton:focus,#settingsButton:focus-visible,.folderChoice:focus,.folderChoice:focus-visible{outline:none;box-shadow:none}
-input[type=number]{height:24px;line-height:normal;padding:2px 3px}input[type=number]::-webkit-inner-spin-button{height:20px;margin-left:2px;opacity:1}#angleInput{height:32px}
+input[type=number]{height:26px;line-height:normal;padding:2px 3px}input[type=number]::-webkit-inner-spin-button{height:20px;margin-left:2px;opacity:1}#angleInput{height:32px}
 #drawPanel{width:max-content;max-width:100%;overflow-x:auto}.toolRow{gap:6px}.toolRow input{width:53px}#drawPanel #textOptions,#drawPanel #arrowOptions{gap:6px}#drawPanel #fontFamily{width:102px}.textStyle{width:22px;height:24px;padding:0;flex:none;background:transparent}.textStyle.selected{background:#45677d}.textStyle svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5}
 .exportSettings label:has(input[type=checkbox]){justify-content:flex-start}.exportSettings label:has(select){justify-content:flex-start}.exportSettings label:has(select) span{min-width:48px}.exportSettings p{margin-top:12px}
 #rotationPivot{position:absolute;z-index:7;width:24px;height:24px;transform-origin:center;cursor:move;touch-action:none}#rotationPivot svg{width:24px;height:24px;stroke:var(--blue);stroke-width:2;fill:none;pointer-events:none}

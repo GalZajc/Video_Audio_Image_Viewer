@@ -24,18 +24,17 @@
     if(stroke.kind==='text'){
       if(!stroke.text)return;ctx.save();const ax=stroke.axisX||{x:1,y:0},ay=stroke.axisY||{x:0,y:1};ctx.transform(ax.x,ax.y,ay.x,ay.y,stroke.x,stroke.y);ctx.fillStyle=stroke.color;ctx.font=textFont(stroke);ctx.textBaseline='top';let y=0;for(const line of textLines(ctx,stroke)){ctx.fillText(line,0,y);y+=stroke.fontSize;}ctx.restore();return;
     }
-    const points=stroke.points;if(!points?.length)return;ctx.save();ctx.strokeStyle=ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';
+    const points=renderPoints(stroke);if(!points?.length)return;ctx.save();ctx.strokeStyle=ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';
     const arrow=stroke.arrow&&points.length>1?arrowHead(stroke):null;
     if(arrow){
-      // Taper only the drawn coverage at the head. The recorded curve and its
-      // accepted low-pass tangent remain untouched. This envelope contains the
-      // entire shaft behind the head base and the exact outer triangle in front,
-      // preventing a thick/oblique terminal stroke from crossing either apex.
-      const h=stroke.arrowHeight,w=stroke.arrowWidth/2,c=Math.cos(arrow.angle),s=Math.sin(arrow.angle);
+      // The taper is local to the apex. A global half-plane used to erase old
+      // bends every time the head changed direction. The even-odd mask leaves
+      // all coverage outside this small tip neighborhood untouched.
+      const h=stroke.arrowHeight,w=stroke.arrowWidth/2,c=Math.cos(arrow.angle),s=Math.sin(arrow.angle),settings=drawingDefaults(),pad=stroke.width*settings.arrowJoinWidths,l=Math.min(h,Math.max(pad,stroke.width*h/Math.max(w,.0001))),half=Math.max(stroke.width,l*w/h)+pad;
       let extent=Math.max(h,w,stroke.width)*2+1;for(const p of points)extent=Math.max(extent,Math.hypot(p.x-arrow.tip.x,p.y-arrow.tip.y)+stroke.width*2+1);
-      ctx.save();ctx.beginPath();for(const [i,p] of [[-extent,-extent],[-h,-extent],[-h,-w],[0,0],[-h,w],[-h,extent],[-extent,extent]].entries()){
-        const x=arrow.tip.x+p[0]*c-p[1]*s,y=arrow.tip.y+p[0]*s+p[1]*c;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-      }ctx.closePath();ctx.clip();
+      ctx.save();ctx.beginPath();for(const polygon of [[[-extent,-extent],[extent,-extent],[extent,extent],[-extent,extent]],[[-l,-half],[pad,-half],[pad,half],[-l,half]],[[-l,-l*w/h],[0,0],[-l,l*w/h]]]){
+       for(const [i,p] of polygon.entries()){const x=arrow.tip.x+p[0]*c-p[1]*s,y=arrow.tip.y+p[0]*s+p[1]*c;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();
+      }ctx.clip('evenodd');
     }
     ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
     // Keep the recorded curve, including its last bend. A straight connector to
@@ -50,12 +49,15 @@
   function textFont(t){return `${t.italic?'italic ':''}${t.bold?'bold ':''}${t.fontSize}px "${t.font}", Arial, sans-serif`;}
   function textLines(ctx,t){ctx.font=textFont(t);const lines=[];for(const paragraph of (t.text||'').split('\n')){let line='';for(const ch of paragraph){if(line&&ctx.measureText(line+ch).width>t.boxWidth){lines.push(line);line='';}line+=ch;}lines.push(line);}return lines;}
   function rotateView(sw,sh,w,h,state,degrees){const before=geometry(sw,sh,w,h,state),pivot=state.pivot||{x:w/2,y:h/2},anchor=toScreen(before,pivot);const after=geometry(sw,sh,w,h,{...state,rotation:degrees}),next=toScreen(after,pivot);return {...state.view,x:state.view.x+anchor.x-next.x,y:state.view.y+anchor.y-next.y};}
-  function stableTangent(stroke){const filter=typeof module!=='undefined'?require('./arrow-filter'):root.ArrowFilter,options=typeof module!=='undefined'?require('./config').drawing:config.drawing;return filter.tangent(stroke,options);}
+  function drawingDefaults(){return typeof module!=='undefined'?require('./config').drawing:config.drawing;}
+  function renderPoints(stroke){const filter=typeof module!=='undefined'?require('./curve-filter'):root.CurveFilter;return stroke.points?.length?filter.points(stroke,drawingDefaults()):stroke.points;}
+  function stableTangent(stroke){const filter=typeof module!=='undefined'?require('./arrow-filter'):root.ArrowFilter;return filter.tangent(stroke,drawingDefaults());}
   function arrowHead(stroke){
-    const p=stroke.points,tip=p.at(-1);const a=stroke.polyline?Math.atan2(tip.y-p.at(-2).y,tip.x-p.at(-2).x):stableTangent(stroke);
-    const h=stroke.arrowHeight,w=stroke.arrowWidth/2,base={x:tip.x-h*Math.cos(a),y:tip.y-h*Math.sin(a)};const left={x:base.x-w*Math.sin(a),y:base.y+w*Math.cos(a)},right={x:base.x+w*Math.sin(a),y:base.y-w*Math.cos(a)},length=Math.hypot(h,w),cos=h/length,sin=w/length,thickness=stroke.width,depth=thickness/Math.max(sin,.0001),innerTip={x:tip.x-depth*Math.cos(a),y:tip.y-depth*Math.sin(a)},leftInner={x:left.x-thickness*sin*Math.cos(a)+thickness*cos*Math.sin(a),y:left.y-thickness*sin*Math.sin(a)-thickness*cos*Math.cos(a)},rightInner={x:right.x-thickness*sin*Math.cos(a)-thickness*cos*Math.sin(a),y:right.y-thickness*sin*Math.sin(a)+thickness*cos*Math.cos(a)};return {tip,base,left,right,innerTip,leftInner,rightInner,angle:a};
+    const p=renderPoints(stroke),tip=p.at(-1);let a=stroke.polyline?Math.atan2(tip.y-p.at(-2).y,tip.x-p.at(-2).x):stableTangent(stroke),alignment=null;
+    if(stroke.arrowBaseDirection&&stroke.arrowStyle!=='open'){const solver=typeof module!=='undefined'?require('./arrow-base-direction'):root.ArrowBaseDirection;alignment=solver.solve(stroke,p,a,drawingDefaults());a=alignment.angle;}
+    const h=stroke.arrowHeight,w=stroke.arrowWidth/2,base={x:tip.x-h*Math.cos(a),y:tip.y-h*Math.sin(a)};const left={x:base.x-w*Math.sin(a),y:base.y+w*Math.cos(a)},right={x:base.x+w*Math.sin(a),y:base.y-w*Math.cos(a)},length=Math.hypot(h,w),cos=h/length,sin=w/length,thickness=stroke.width,depth=thickness/Math.max(sin,.0001),innerTip={x:tip.x-depth*Math.cos(a),y:tip.y-depth*Math.sin(a)},leftInner={x:left.x-thickness*sin*Math.cos(a)+thickness*cos*Math.sin(a),y:left.y-thickness*sin*Math.sin(a)-thickness*cos*Math.cos(a)},rightInner={x:right.x-thickness*sin*Math.cos(a)-thickness*cos*Math.sin(a),y:right.y-thickness*sin*Math.sin(a)+thickness*cos*Math.cos(a)};return {tip,base,left,right,innerTip,leftInner,rightInner,angle:a,alignment};
   }
   function hsv(h,s,v){const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];return rgb.map(n=>(n+m)*255);}
   function rgb(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;let h=d===0?0:max===r?60*(((g-b)/d)%6):max===g?60*((b-r)/d+2):60*((r-g)/d+4);return [(h+360)%360,max?d/max:0,max];}
-  const api={geometry,toScreen,toSource,zoom,visibleCrop,constrained,draw,textFont,textLines,rotateView,arrowHead,stableTangent,hsv,rgb};if(typeof module!=='undefined')module.exports=api;else root.Visual=api;
+  const api={geometry,toScreen,toSource,zoom,visibleCrop,constrained,draw,textFont,textLines,rotateView,arrowHead,stableTangent,renderPoints,hsv,rgb};if(typeof module!=='undefined')module.exports=api;else root.Visual=api;
 })(typeof window!=='undefined'?window:globalThis);

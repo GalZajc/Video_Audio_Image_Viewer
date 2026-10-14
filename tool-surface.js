@@ -1,13 +1,17 @@
 'use strict';
 const $=id=>document.getElementById(id),C=Core,kind=new URLSearchParams(location.search).get('kind');
-let config,options,scale=1,language='sl',shortcuts={},edit=null,colorKey='',colorControls=[];
+let config,options,scale=1,language='sl',shortcuts={},edit=null,colorKey='',colorControls=[],ownerId=null,tabId=null;
 const parameters=new Map(),tr=(sl,en)=>language==='en'?en:sl;
 $('drawPanel').hidden=kind!=='palette';$('colorPanel').hidden=kind!=='color';
 function color(tool=options.tool||'line'){return tool==='line'?options:options.colors[tool];}
 function cssColor(tool){const o=color(tool);return `rgba(${Visual.hsv(o.hue,o.saturation,o.brightness).map(Math.round).join(',')},${o.alpha})`;}
-function send(value){window.tools.command(value);}
-function range(key){return options.ranges?.[key]||{min:key==='fontSize'?1:.1,max:['arrowPersistence','arrowMinWavelength'].includes(key)?500:100};}
+function send(value){window.tools.command({...value,ownerId,tabId});}
+function range(key){return options.ranges?.[key]||{min:key.startsWith('curveWavelength')?0:key==='fontSize'?1:.1,max:['arrowPersistence','arrowMinWavelength'].includes(key)||key.startsWith('curveWavelength')?500:100};}
 for(const node of document.querySelectorAll('[data-tool="arrow"] .parameter'))$('openArrowParameters').append(node.cloneNode(true));
+for(const [tool,key] of [['line','curveWavelengthLine'],['arrow','curveWavelengthArrow'],['arrowOpen','curveWavelengthOpen']]){
+ const node=document.createElement('div');node.className='parameter';node.dataset.key=key;node.dataset.labelSl='Glajenje — najkrajša valovna dolžina (px)';node.dataset.labelEn='Smoothing — minimum wavelength (px)';document.querySelector(`[data-tool="${tool}"] .toolOptions`).append(node);
+}
+const baseOption=document.createElement('label');baseOption.className='optionRow baseDirectionOption';baseOption.innerHTML='<input id="arrowBaseDirection" type="checkbox"><span data-sl="Smer konice pri osnovnici" data-en="Head direction at the base"></span>';document.querySelector('[data-tool="arrow"] .toolOptions').append(baseOption);
 for(const node of document.querySelectorAll('.parameter')){
  const key=node.dataset.key,header=document.createElement('div'),track=document.createElement('div'),min=document.createElement('button'),max=document.createElement('button'),slider=document.createElement('input');
  header.className='parameterHeader';track.className='parameterTrack';slider.type='range';slider.step=.1;
@@ -23,20 +27,27 @@ function openValue(key,side,node){
  $('parameterRange').returnValue='cancel';$('parameterRange').showModal();const input=$(side==='max'?'parameterMax':'parameterMin');input.focus();input.select();
 }
 $('cancelParameterRange').onclick=()=>$('parameterRange').close('cancel');
+$('parameterRange').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing&&event.target.matches('input')){event.preventDefault();if(event.target.form.checkValidity())$('parameterRange').close('apply');}});
 $('parameterRange').addEventListener('close',()=>{
  if($('parameterRange').returnValue!=='apply'||!edit)return;const {key,side}=edit,old=range(key),v=Number($(side==='max'?'parameterMax':'parameterMin').value),r={min:side==='min'?v:old.min,max:side==='max'?v:old.max};
- if(!Number.isFinite(v)||r.min<=0||r.max<=r.min||r.max>10000||side==='value'&&(v<r.min||v>r.max))return;
+ if(!Number.isFinite(v)||r.min<(key.startsWith('curveWavelength')?0:.000001)||r.max<=r.min||r.max>10000||side==='value'&&(v<r.min||v>r.max))return;
  options.ranges||={};options.ranges[key]=r;options[key]=C.clamp(side==='value'?v:options[key],r.min,r.max);send({action:'parameter',key,value:options[key],range:r});render();
 });
+$('parameterRange').addEventListener('close',()=>{document.activeElement?.blur();});
 for(const row of document.querySelectorAll('.toolRow'))row.querySelector('.toolIcon').onclick=()=>send({action:'tool',tool:row.dataset.tool});
 for(const [id,key] of [['textBold','bold'],['textItalic','italic'],['eraserPreview','eraserPreview']])$(id).onclick=()=>send({action:'option',key,value:!options[key]});
 $('fontFamily').onchange=()=>send({action:'option',key:'font',value:$('fontFamily').value});
+$('arrowBaseDirection').onchange=()=>send({action:'option',key:'arrowBaseDirection',value:$('arrowBaseDirection').checked});
+function resizeSurface(){
+ const panel=$(kind==='palette'?'drawPanel':'colorPanel'),main=document.querySelector('main'),style=getComputedStyle(main),height=$('windowGrip').offsetHeight+panel.getBoundingClientRect().height+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom);
+ window.tools.size(height);
+}
 function paintPreview(){
- if(!options)return;const canvas=$('toolPreview'),ctx=canvas.getContext('2d'),tool=options.tool||'line';ctx.clearRect(0,0,canvas.width,canvas.height);
- if(tool==='eraser'){ctx.beginPath();ctx.arc(88,50,options.eraserWidth*scale/2,0,Math.PI*2);ctx.strokeStyle=cssColor(tool);ctx.lineWidth=1;ctx.stroke();return;}
+ if(!options)return;const canvas=$('toolPreview'),tool=options.tool||'line';if(canvas.clientWidth&&canvas.width!==canvas.clientWidth)canvas.width=canvas.clientWidth;if(canvas.clientHeight&&canvas.height!==canvas.clientHeight)canvas.height=canvas.clientHeight;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+ if(tool==='eraser'){ctx.beginPath();ctx.arc(canvas.width/2,canvas.height/2,options.eraserWidth*scale/2,0,Math.PI*2);ctx.strokeStyle=cssColor(tool);ctx.lineWidth=1;ctx.stroke();return;}
  if(tool==='text'){ctx.save();ctx.translate(8,8);ctx.scale(scale,scale);Visual.draw(ctx,{kind:'text',x:0,y:0,boxWidth:10000,text:'ABC\nabc',font:options.font,fontSize:options.fontSize,bold:options.bold,italic:options.italic,color:cssColor(tool)});ctx.restore();return;}
  const arrow=['arrow','arrowOpen'].includes(tool),width=arrow?(options.arrowLineWidth||options.width):options.width;
- const points=Array.from({length:65},(_,i)=>{const t=i/64;return {x:(18+132*t)/scale,y:(64-28*Math.sin(t*Math.PI*1.2))/scale};}),line={kind:'line',points,width,color:cssColor(tool),arrow,arrowStyle:tool==='arrowOpen'?'open':'filled',arrowWidth:options.arrowWidth,arrowHeight:options.arrowHeight,arrowPersistence:options.arrowPersistence,arrowMinWavelength:options.arrowMinWavelength};
+ const points=Array.from({length:65},(_,i)=>{const t=i/64;return {x:(18+(canvas.width-44)*t)/scale,y:(64-28*Math.sin(t*Math.PI*1.2))/scale};}),line={kind:'line',points,width,color:cssColor(tool),arrow,arrowStyle:tool==='arrowOpen'?'open':'filled',arrowWidth:options.arrowWidth,arrowHeight:options.arrowHeight,arrowPersistence:options.arrowPersistence,arrowMinWavelength:options.arrowMinWavelength,curveMinWavelength:options[tool==='line'?'curveWavelengthLine':tool==='arrow'?'curveWavelengthArrow':'curveWavelengthOpen']||0,arrowBaseDirection:tool==='arrow'&&!!options.arrowBaseDirection};
  const head=arrow?Visual.arrowHead(line):null,extent=[...points,...(head?[head.tip,head.left,head.right,head.innerTip,head.leftInner,head.rightInner]:[])],xs=extent.map(p=>p.x*scale),ys=extent.map(p=>p.y*scale);
  ctx.save();ctx.translate((canvas.width-Math.max(...xs)-Math.min(...xs))/2,(canvas.height-Math.max(...ys)-Math.min(...ys))/2);ctx.scale(scale,scale);Visual.draw(ctx,line);ctx.restore();
 }
@@ -47,9 +58,9 @@ function render(){
   const tool=row.dataset.tool,button=row.querySelector('.toolIcon'),rgb=Visual.hsv(color(tool).hue,color(tool).saturation,color(tool).brightness),e=tool===options.tool?config.drawing.selectedToolTint:0;
   row.classList.toggle('expanded',tool===(options.expandedTool===undefined?options.tool:options.expandedTool));button.style.color=cssColor(tool);button.style.background=`rgb(${rgb.map(v=>Math.round((1-e)*44+e*v)).join(',')})`;
  }
- for(const [key,parts] of parameters){const r=range(key);for(const p of parts){p.header.textContent=tr(p.node.dataset.labelSl,p.node.dataset.labelEn);p.slider.min=r.min;p.slider.max=r.max;p.slider.value=options[key]||config.drawing[key]||4;p.min.textContent=r.min;p.max.textContent=r.max;}}
+ for(const [key,parts] of parameters){const r=range(key);for(const p of parts){p.header.textContent=tr(p.node.dataset.labelSl,p.node.dataset.labelEn);p.slider.min=r.min;p.slider.max=r.max;p.slider.value=options[key]??config.drawing[key]??4;p.min.textContent=r.min;p.max.textContent=r.max;}}
  $('fontFamily').value=options.font;for(const [id,key] of [['textBold','bold'],['textItalic','italic'],['eraserPreview','eraserPreview']])$(id).classList.toggle('selected',!!options[key]);
- paintPreview();if(kind==='color')renderColor();requestAnimationFrame(()=>window.tools.size(document.querySelector('main').scrollHeight+14));
+ $('arrowBaseDirection').checked=!!options.arrowBaseDirection;paintPreview();if(kind==='color')renderColor();requestAnimationFrame(resizeSurface);
 }
 function colorValues(){const o=color();return o.mode==='rgb'?[...Visual.hsv(o.hue,o.saturation,o.brightness).map(v=>v/255),o.alpha]:[o.hue/360,o.saturation,o.brightness,o.alpha];}
 function applyColor(values){const o=color();if(o.mode==='rgb')[o.hue,o.saturation,o.brightness]=Visual.rgb(...values.slice(0,3).map(v=>v*255));else[o.hue,o.saturation,o.brightness]=[values[0]*360,values[1],values[2]];o.alpha=values[3];send({action:'color',tool:options.tool||'line',color:{...o}});renderColor();}
@@ -83,5 +94,6 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>{if(e.code==='Escape'){if(escapeDialog){escapeDialog=false;return;}const pending=escapePending;escapePending=null;if(!$('parameterRange').open&&pending&&!pending.used){e.preventDefault();send({action:'shortcut',name:'escape',expand:pending.expand});}}});
 window.addEventListener('blur',()=>escapePending=null);
-function update(value){if(!value?.options)return;options=value.options;scale=value.scale||1;language=value.language||'sl';shortcuts=value.shortcuts||{};render();}
+function update(value){if(!value?.options)return;ownerId=value.ownerId;tabId=value.tabId;options=value.options;scale=value.scale||1;language=value.language||'sl';shortcuts=value.shortcuts||{};render();}
+new ResizeObserver(()=>{if(options){resizeSurface();paintPreview();}}).observe($(kind==='palette'?'drawPanel':'colorPanel'));
 window.tools.onState(update);window.tools.init().then(value=>{config=value.config;update(value);});

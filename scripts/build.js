@@ -18,7 +18,8 @@ const {execFileSync}=require('node:child_process');
     if(!fs.existsSync(path.join(root,'assets','icon.ico')))execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'make-icon.ps1')],{windowsHide:true});
   }
   const {packager}=await import('@electron/packager');
-  const outputs=await packager({dir:root,out:path.join(root,'app'),name:'Video Audio Image Viewer',executableName:'VideoAudioImageViewer',platform:process.platform,arch:process.arch,overwrite:true,asar:false,icon:path.join(root,'assets','icon'),prune:true,
+  const electronVersion=require('electron/package.json').version;
+  const outputs=await packager({dir:root,out:path.join(root,'app'),name:'Video Audio Image Viewer',executableName:'VideoAudioImageViewer',electronVersion,platform:process.platform,arch:process.arch,overwrite:true,asar:false,icon:path.join(root,'assets','icon'),prune:true,
     ignore:[/^\/Test files(?:\/|$)/,/\.lnk$/i,/^\/app(?:\/|$)/,/^\/DATA(?:\/|$)/,/^\/OUTPUT(?:\/|$)/,/^\/tests(?:\/|$)/,/^\/scripts(?:\/|$)/,/^\/\.git(?:\/|$)/,/^\/node_modules(?:\/|$)/],
     win32metadata:{CompanyName:'Local',FileDescription:'Video Audio Image Viewer',ProductName:'Video Audio Image Viewer',InternalName:'VideoAudioImageViewer'}});
   console.log('Portable application: '+outputs[0]);

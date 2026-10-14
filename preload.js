@@ -3,6 +3,7 @@ const {contextBridge,ipcRenderer,webUtils}=require('electron');
 const call=(name,value)=>ipcRenderer.invoke(name,value);
 contextBridge.exposeInMainWorld('player',{
   drawingToolsSync:value=>ipcRenderer.send('drawing-tools-sync',value),onDrawingToolCommand:callback=>ipcRenderer.on('drawing-tool-command',(_event,value)=>callback(value)),
+  onDrawingToolsRequest:callback=>ipcRenderer.on('drawing-tools-request',()=>callback()),onDrawingToolsOptions:callback=>ipcRenderer.on('drawing-tools-options',(_event,value)=>callback(value)),
   onTabDragReset:callback=>ipcRenderer.on('tab-drag-reset',()=>callback()),
   init:()=>call('init'),onTabDragTarget:callback=>ipcRenderer.on('tab-drag-target',(_event,value)=>callback(value)),tabDragTargetPosition:value=>ipcRenderer.send('tab-drag-target-position',value),dragContentReady:()=>ipcRenderer.send('drag-content-ready'),onTabDragPresentation:callback=>ipcRenderer.on('tab-drag-presentation',(_event,value)=>callback(value)), tabDragPreview:value=>ipcRenderer.send('tab-drag-preview',value),moveTab:value=>call('move-tab',value),subtitles:id=>call('subtitles',id),thumbnail:value=>call('thumbnail',value),pickFiles:()=>call('pick-files'),describe:file=>call('describe',file),
   frame:request=>call('frame',request),prepare:id=>call('prepare',id),prepareImage:id=>call('prepare-image',id),release:id=>call('release',id),

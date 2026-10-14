@@ -90,3 +90,11 @@ Preverjanje vključuje dejanske vnose miške pri priključevanju zavihkov in ris
 - Dejanska priključitev zavihka in vsebine že pred izpustom miške, takojšnja menjava vsebine izvora, pripravljeno okno za hitrejše iztrganje, premikanje skozi prazen del vrstice.
 - Ostra konica obeh vrst puščic brez spreminjanja uspešnega filtra.
 - Nova zahteva brez skoka in brez spremembe slike strani; obe testni zahtevi trajno odstranjeni.
+
+## 2.5.0 — osmi pregled
+
+- Ospredje med vlečenjem zavihka in enoten prag menjave sosedov.
+- Vedno vidni, tesno veliki risarski okni; predogled enake širine kot gumbi, pravilni robovi in številčna polja.
+- Ločena stanja orodij po zavihkih, takojšnja menjava lastnika ob kliku drugega okna, izbirni skupni način.
+- Glajenje celotne prostoročne krivulje in iterativno usmerjanje trikotne konice pri osnovnici.
+- Popravljena globalna maska, zaradi katere so starejši deli črt izginjali.

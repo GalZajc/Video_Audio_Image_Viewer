@@ -15,7 +15,7 @@ protocol.registerSchemesAsPrivileged([{scheme:'media',privileges:{standard:true,
 let win,ready=false,exporting=false,pending=[],state={tabs:[],active:0,closed:[],history:[]},settings;
 let writeQueue=Promise.resolve();
 const windowContexts=new Map(),releaseRequests=new Set();let quitting=false,quitContexts=[],quitActive=null,quitFlushed=false;
-const toolWindows=require('./tool-windows-main')({ipcMain,screen,defaults,contextFor,data});
+const toolWindows=require('./tool-windows-main')({ipcMain,screen,defaults,contextFor,data,getSettings:()=>settings});
 function setFullscreen(value,target=win){
   target._fullscreenQueue=(target._fullscreenQueue||Promise.resolve()).catch(()=>{}).then(()=>new Promise(resolve=>{if((target._fullscreenState||false)===value)return resolve(value);const event=value?'enter-full-screen':'leave-full-screen';let timer;const done=()=>{clearTimeout(timer);target.removeListener(event,done);target._fullscreenState=value;resolve(value);};target.once(event,done);timer=setTimeout(()=>{target.removeListener(event,done);target._fullscreenState=target.isFullScreen();target.webContents.send('fullscreen',target._fullscreenState);resolve(target._fullscreenState);},defaults.window.transitionTimeoutMs);target.setFullScreen(value);}));return target._fullscreenQueue;
 }
@@ -28,7 +28,7 @@ function createWindow(saved={tabs:[],active:0,closed:[],history:[]},bounds=null,
   const initialBounds=(saved.maximized||saved.fullscreen)&&saved.normalBounds?saved.normalBounds:bounds;
   const created=new BrowserWindow({...defaults.window,...initialBounds,show:!options.temporary&&process.env.VAP_TEST_MODE!=='1',frame:false,backgroundColor:'#080808',title:'Video Audio Image Viewer',icon:path.join(__dirname,'assets','icon.png'),webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false,offscreen:process.env.VAP_TEST_MODE==='1'}});
   const ctx={window:created,temporary:!!options.temporary,dragPresentation:options.dragPresentation||null,state:{tabs:saved.tabs||[],active:saved.active||0,closed:saved.closed||[],history:saved.history||[]},ready:false,pending:[],bounds:created.getBounds(),normalBounds:created.getNormalBounds(),maximized:false,fullscreen:false};windowContexts.set(created.webContents.id,ctx);if(!ctx.temporary&&(!win||win.isDestroyed()))win=created;
-  created.on('focus',()=>{if(!ctx.temporary)win=created;});created.webContents.setWindowOpenHandler(()=>({action:'deny'}));created.webContents.on('will-navigate',e=>e.preventDefault());created.on('maximize',()=>created.webContents.send('maximized',true));created.on('unmaximize',()=>created.webContents.send('maximized',false));
+  created.on('focus',()=>{if(!ctx.temporary){win=created;toolWindows.focusOwner(ctx);}});created.webContents.setWindowOpenHandler(()=>({action:'deny'}));created.webContents.on('will-navigate',e=>e.preventDefault());created.on('maximize',()=>created.webContents.send('maximized',true));created.on('unmaximize',()=>created.webContents.send('maximized',false));
   created._fullscreenState=false;for(const event of ['enter-full-screen','leave-full-screen'])created.on(event,()=>{created._fullscreenState=event==='enter-full-screen';created.webContents.send('fullscreen',created._fullscreenState);});
   created.on('close',event=>{ctx.bounds=created.getBounds();ctx.normalBounds=created.getNormalBounds();ctx.maximized=created.isMaximized();ctx.fullscreen=created.isFullScreen();if(exporting){event.preventDefault();dialog.showMessageBox(created,{type:'info',message:'Izvoz še poteka.',buttons:['V redu']});}});
   const id=created.webContents.id;created.on('closed',()=>{windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting&&!ctx.temporary)saveWindows(ctx);sweepReleases();if(!quitting&&!ctx.temporary&&!liveWindows().length){toolWindows.destroyToolWindows();app.quit();}});
@@ -112,13 +112,13 @@ ipcMain.handle('settings',async(_event,value)=>{
   for(const key of Object.keys(formats))if(formats[key].includes(value[key]))settings[key]=value[key];
   if(['sl','en'].includes(value.language))settings.language=value.language;
   if(['name','modified','created','size'].includes(value.folderSort))settings.folderSort=value.folderSort;
-  for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit','timelinePreviewFitAspect'])if(typeof value[key]==='boolean')settings[key]=value[key];
+  for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit','timelinePreviewFitAspect','linkDrawingTools'])if(typeof value[key]==='boolean')settings[key]=value[key];
   if(typeof value.backgroundColor==='string'&&/^#[0-9a-f]{8}$/i.test(value.backgroundColor))settings.backgroundColor=value.backgroundColor;
   if(value.shortcuts){const next={};for(const key of Object.keys(defaults.shortcuts)){const binding=value.shortcuts[key];if(typeof binding!=='string'||!/^(?:(?:Ctrl|Alt|Shift|Meta|Escape)\+)*(?:Key[A-Z]|Digit[0-9]|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Space|Comma|Period|Tab|Escape|Backspace|Delete|Enter|Home|End|PageUp|PageDown|BracketLeft|BracketRight|Minus|Equal|Slash|Semicolon|Quote|Backquote|F(?:[1-9]|1[0-2]))$/.test(binding))throw new Error('Neveljavna bližnjica.');next[key]=binding;}if(new Set(Object.values(next)).size!==Object.keys(next).length)throw new Error('Bližnjice se ne smejo ponavljati.');settings.shortcuts=next;}
   if(value.drawingCustomization&&typeof value.drawingCustomization==='object'&&JSON.stringify(value.drawingCustomization).length<65536)settings.drawingCustomization=JSON.parse(JSON.stringify(value.drawingCustomization));
   if(Number.isFinite(value.tabDetachDistance))settings.tabDetachDistance=Math.max(0,Math.min(1000,Math.round(value.tabDetachDistance)));
   for(const key of ['timelinePreviewWidth','timelinePreviewHeight'])if(Number.isFinite(value[key]))settings[key]=Math.max(80,Math.min(640,Math.round(value[key])));if(typeof value.timelinePreviewEnabled==='boolean')settings.timelinePreviewEnabled=value.timelinePreviewEnabled;
-  await persist('settings.json',settings);for(const ctx of liveWindows())if(ctx.window.webContents.id!==_event.sender.id)ctx.window.webContents.send('settings-changed',settings);return settings;
+  await persist('settings.json',settings);for(const ctx of liveWindows())if(ctx.window.webContents.id!==_event.sender.id)ctx.window.webContents.send('settings-changed',settings);toolWindows.preferencesChanged(settings);return settings;
 });
 ipcMain.handle('save-session',async(_event,next)=>{const ctx=windowContexts.get(_event.sender.id);if(!ctx)return;
   if(!Array.isArray(next.tabs)||!Array.isArray(next.closed)||!Array.isArray(next.history))return;

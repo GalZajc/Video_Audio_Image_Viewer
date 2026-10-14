@@ -1,5 +1,7 @@
 # Video Audio Image Viewer
 
+Različica 2.5.0: risarski okni sledita aktivnemu zavihku in oknu; nastavitve orodij se ohranijo za vsak zavihek, po želji pa so skupne. Dodano je sprotno glajenje celotne krivulje in izbirna smer konice pri osnovnici. Stari deli puščice ne izginjajo več med risanjem. Odpeti zavihki ostanejo v ospredju in se odzivno prerazporejajo. Podrobnosti in preverjanja so spodaj.
+
 Različica 2.4.0: dve neodvisni okni za risarska orodja in barvo, barvne ikone ter usklajene mere in predogledi. Zavihek se skupaj s posnetkom priključi drugemu oknu že med držanjem miške; izvor takoj pokaže preostali posnetek. Konice puščic ostanejo ostre brez spreminjanja sprejetega filtra. Dodajanje nove zahteve ohrani povsem enak prikaz strani, opombe in slike pa ostanejo povezane s svojo fazo pregleda.
 
 Različica 2.2.0: predogled časovnice lahko tesno sledi razmerju posnetka znotraj največje širine in višine. Pri vlečenju zavihka je viden pravi pregledovalnik v velikosti izvornega okna. Risarski meni ima sive celovrstične gumbe, ločen vnos Od/Do in dvoklik drsnika za točno vrednost. Puščice ohranijo narisano krivuljo in imajo stabilnejšo smer, radirka pa osvežuje samo spremenjeni del slike. Nova opomba ohrani položaj strani. Podrobnosti trenutnega delovanja so tudi v angleškem [README](README.md).
@@ -142,3 +144,13 @@ Iztrganje zavihka uporabi vnaprej pripravljeno okno. Izvorno okno takoj pokaže 
 Nova zahteva se takoj shrani brez spremembe prikazanih pikslov ali drsnika. Njena vrstica se pokaže ob naslednjem premiku po seznamu, filtriranju ali osvežitvi. Opombe in pripadajoče slike se ohranijo.
 
 Črta puščice je omejena na natančen obris konice; posneto krivuljo in sprejeti filter smeri ohrani.
+
+## Različica 2.5.0
+
+Iztrgani zavihek ostane med vlečenjem v ospredju; običajno in priključeno premikanje imata enak prag zamenjave soseda.
+
+Risarski okni sta vedno v ospredju in se tesno prilagajata vsebini do največ 1000 px oziroma višine zaslona. Vsak zavihek si zapomni orodje, barvo in mere. Nastavitev »Ohrani ista risarska orodja pri menjavi zavihka ali okna« namesto tega uporabi skupno stanje. Zavihki brez vključenega risanja menija skrijejo.
+
+Krivulje in obe puščici imajo novo nastavitev glajenja celotne poteze; 0 ga izključi. Vrednost je valovna dolžina v izvornih pikslih. Trikotna konica ima dodatno možnost »Smer konice pri osnovnici«. Doslej sprejeti filter za smer konice ostane nespremenjen.
+
+Omejevanje črte pri vrhu puščice je lokalno, zato starejši deli krivulj med risanjem ne izginjajo. Glajenje deluje sproti ter se enako ohrani po izpustu miške in pri izvozu.
