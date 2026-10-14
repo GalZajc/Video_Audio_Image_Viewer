@@ -9,3 +9,8 @@ header{padding-top:9px;padding-bottom:9px}.toolbar{margin-top:0}#save:not(.error
 .featureTop{align-items:flex-start}.notes,.descriptionEditor{resize:none;overflow:hidden}.noteLabel{font-size:10px;color:#999;margin-top:9px}.oldNote{color:#b5b5b5;background:#202020}.newNote{font-size:11px;padding:3px 7px;margin-top:6px}.screenshotControls:focus{outline:1px solid var(--blue);outline-offset:2px}.uploadStatus{color:#aaa}.addition{width:min(560px,90vw);color:inherit;margin:auto}.addition::backdrop{background:#0009}.dialogActions{display:flex;gap:8px;justify-content:flex-end}
 
 html,body,.feature,.noteControls{overflow-anchor:none}
+
+/* Text fields grow naturally, without collapsing a focused textarea to measure it. */
+div.notes,div.descriptionEditor{white-space:pre-wrap;overflow-wrap:anywhere;min-height:62px;border:1px solid #484848;border-radius:5px;background:#292929;padding:7px 9px;cursor:text;outline:none}
+div.notes:focus,div.descriptionEditor:focus{border-color:var(--blue)}div.notes:empty::before{content:attr(data-placeholder);color:#888;pointer-events:none}div.notes.oldNote{background:#202020}div.notes[hidden],.notePhase[hidden],.newNote[hidden]{display:none}
+.phaseImages{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.phaseImages:empty{display:none}.phaseImages .screenshot{height:66px;max-width:190px}.phaseImages .screenshot a{display:flex;align-items:center;justify-content:center;width:150px;height:64px;border:1px solid #525252;border-radius:3px}.phaseImages .screenshot img{max-width:148px;max-height:62px;border:0}.phaseImages .screenshot button{align-self:flex-start}.notePhase{margin-top:8px}.noteLabel{margin-top:0}

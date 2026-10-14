@@ -45,7 +45,9 @@
     "pivotHitPixels": 12,
     "tabDragPreviewIntervalMs": 16,
     "tabDetachFadeMs": 100,
-    "tabDetachLoadTimeoutMs": 4000
+    "tabDetachLoadTimeoutMs": 4000,
+    "tabAttachHeight": 28,
+    "tabAttachFadeMs": 150
   },
   "storage": {
     "closedTabs": 500,
@@ -182,7 +184,8 @@
     "timelinePreviewEnabled": true,
     "timelinePreviewWidth": 256,
     "timelinePreviewHeight": 144,
-    "timelinePreviewFitAspect": true
+    "timelinePreviewFitAspect": true,
+    "tabDetachDistance": 28
   },
   "associations": {
     "excluded": [
@@ -220,7 +223,13 @@
     "arrowStartupWidths": 4,
     "arrowTurnRate": 3.141592653589793,
     "arrowConfidence": 0.15,
-    "arrowSmoothingFraction": 0.25
+    "arrowSmoothingFraction": 0.25,
+    "arrowMinWavelength": 64,
+    "arrowFilterSamples": 96,
+    "arrowFilterStep": 1,
+    "arrowDerivativeFraction": 0.125,
+    "arrowMinFilterStep": 0.25,
+    "arrowMaxSegmentSteps": 64
   },
   "preview": {
     "quantizeSeconds": 0.25,

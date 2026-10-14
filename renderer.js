@@ -24,10 +24,10 @@ function renderTabs(){
     el.addEventListener('auxclick',event=>{if(event.button===1){event.preventDefault();closeTab(tabs.indexOf(tab));}});
     el.addEventListener('mousedown',event=>{if(event.button===1)event.preventDefault();});
     el.addEventListener('dblclick',()=>{if(!suppressTabClick)window.player.reveal(tab.meta.id).catch(showError);});
-    el.addEventListener('pointerdown',event=>{if(event.button!==0||event.target.closest('.x,.mediaIcons'))return;tabDrag={tab,element:el,startX:event.clientX,startY:event.clientY,offset:event.clientX-el.getBoundingClientRect().left,originalLeft:el.getBoundingClientRect().left,moved:false};el.setPointerCapture(event.pointerId);});
+    el.addEventListener('pointerdown',event=>{if(event.button!==0||event.target.closest('.x,.mediaIcons'))return;tabDrag={tab,element:el,startX:event.clientX,startY:event.clientY,offset:event.clientX-el.getBoundingClientRect().left,originalLeft:el.getBoundingClientRect().left,single:tabs.length===1,moved:false};el.setPointerCapture(event.pointerId);});
     $('tabs').append(el);
   });
-  applyTabWindowPresentation();
+  applyTabWindowPresentation();applyDockPresentation();
 }
 function reorderTab(tab,position){
   const positions=new Map([...$('tabs').children].map(el=>[el,el.offsetLeft]));
@@ -41,7 +41,7 @@ function reorderTab(tab,position){
 document.addEventListener('pointermove',event=>{
   if(!tabDrag)return;
   if(!tabDrag.moved&&Math.hypot(event.clientX-tabDrag.startX,event.clientY-tabDrag.startY)<config.view.tabDragThreshold)return;
-  tabDrag.moved=true;tabDrag.outside=event.clientY< -12||event.clientY>parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar'))+16||event.clientX< -12||event.clientX>innerWidth+12;tabDrag.element.classList.add('dragging');if(!tabDrag.candidate){capture();const bounds=tabDrag.element.getBoundingClientRect();window.player.tabDragPreview({phase:'begin',visible:tabDrag.outside,tab:serial(tabDrag.tab),left:bounds.left,width:bounds.width,grabX:tabDrag.startX,grabY:tabDrag.startY,x:event.screenX,y:event.screenY});tabDrag.candidate=true;}else window.player.tabDragPreview({phase:'move',visible:tabDrag.outside,x:event.screenX,y:event.screenY});if(tabDrag.outside){tabDrag.element.style.transform=`translate(${event.clientX-tabDrag.startX}px,${event.clientY-tabDrag.startY}px)`;return;}tabDrag.element.style.transform=`translateX(${event.clientX-tabDrag.offset-tabDrag.element.offsetLeft}px)`;
+  tabDrag.moved=true;tabDrag.outside=tabDrag.single||Math.abs(event.clientY-tabDrag.startY)>(settings.tabDetachDistance??parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar')))||event.clientX< -12||event.clientX>innerWidth+12;tabDrag.element.classList.add('dragging');if(!tabDrag.candidate){capture();const bounds=tabDrag.element.getBoundingClientRect();window.player.tabDragPreview({phase:'begin',visible:tabDrag.outside,tab:serial(tabDrag.tab),kind:tabDrag.tab.meta.kind,left:bounds.left,width:bounds.width,grabX:tabDrag.startX,grabY:tabDrag.startY,x:event.screenX,y:event.screenY});tabDrag.candidate=true;}else window.player.tabDragPreview({phase:'move',visible:tabDrag.outside,x:event.screenX,y:event.screenY});if(tabDrag.single){tabDrag.element.style.transform='';return;}if(tabDrag.outside){tabDrag.element.style.transform=`translate(${event.clientX-tabDrag.startX}px,${event.clientY-tabDrag.startY}px)`;return;}tabDrag.element.style.transform=`translateX(${event.clientX-tabDrag.offset-tabDrag.element.offsetLeft}px)`;
   const siblings=[...$('tabs').children].filter(el=>el._tab!==tabDrag.tab);
   const target=siblings.filter(el=>{return event.clientX>el.offsetLeft+el.offsetWidth/2;}).length;
   if(target!==tabs.indexOf(tabDrag.tab))reorderTab(tabDrag.tab,target);tabDrag.element.style.transform=`translateX(${event.clientX-tabDrag.offset-tabDrag.element.offsetLeft}px)`;
@@ -50,7 +50,7 @@ async function finishTabDrag(event){
   if(!tabDrag)return;const moved=tabDrag.moved,el=tabDrag.element,detach=!!event&&tabDrag.outside,tab=tabDrag.tab;
   if(event&&el.hasPointerCapture(event.pointerId))el.releasePointerCapture(event.pointerId);
   el.classList.remove('dragging');el.style.transform='';tabDrag=null;
-  if(detach){suppressTabClick=true;try{capture();await persistSoon(true);await window.player.moveTab({tab:serial(tab),x:event.screenX,y:event.screenY});removeTransferredTab(tab);}catch(error){showError(error);}finally{window.player.tabDragPreview({phase:'cancel'});suppressTabClick=false;}return;}
+  if(detach){suppressTabClick=true;try{capture();await persistSoon(true);const result=await window.player.moveTab({tab:serial(tab),x:event.screenX,y:event.screenY});if(!result.sameWindow)removeTransferredTab(tab);}catch(error){showError(error);}finally{window.player.tabDragPreview({phase:'cancel'});suppressTabClick=false;}return;}
   window.player.tabDragPreview({visible:false});if(moved){suppressTabClick=true;setTimeout(()=>{suppressTabClick=false;},0);renderTabs();persistSoon(true);}controls();
 }
 document.addEventListener('pointerup',finishTabDrag);document.addEventListener('pointercancel',finishTabDrag);window.addEventListener('blur',()=>{if(!tabDrag?.outside)finishTabDrag();});

@@ -1,0 +1,5 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),M=require('../review/model'),limits=require('../config').review;
+const image={url:'/screenshots/0123456789abcdef0123456789abcdef.png',name:'čšž.png'};
+test('review screenshot phase survives an image-only note becoming historical',()=>{const state={entries:{example:{status:'fail',notes:'',notesHistory:['prej'],screenshots:[{...image,phase:'note',note:1}]}},custom:[]};assert.equal(M.images(M.validate(state,limits).entries.example,'note',1).length,1);state.entries.example.notesHistory.push('');assert.equal(M.images(M.validate(state,limits).entries.example,'note',1).length,1);assert.equal(M.images(state.entries.example,'note',2).length,0);});
+test('legacy screenshots remain at the base requirement; invalid future phases are rejected',()=>{const state={entries:{example:{status:'pass',notes:'',screenshots:[image]}},custom:[]},normalized=M.validate(state,limits);assert.equal(normalized.entries.example.screenshots[0].phase,'base');normalized.entries.example.screenshots[0]={...image,phase:'note',note:2};assert.throws(()=>M.validate(normalized,limits),/faza/);});

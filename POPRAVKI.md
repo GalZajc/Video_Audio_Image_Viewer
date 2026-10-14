@@ -71,3 +71,15 @@ Privzete povezave: dejansko odpiranje MKV in OGG po novi sestavi deluje; AVIF š
 - Glavni README in opis izdaj na GitHubu sta v angleščini; slovenska navodila so v README.sl.md.
 
 Preverjanje: 26 jedrnih in FFmpeg testov, sedem preizkusov petega pregleda v Electronu, trije preizkusi opomb na celotnem seznamu, 16 preizkusov prejšnjega pregleda ter kombinirani preizkus izvoza, povečave, obreza in fullscreen. Preverjena sta tudi obnova obeh oken po ponovnem zagonu in sestavljeni paket. Na testni sliki 4K z 80.000 starimi točkami je radirka opravila 140 delnih in nič celotnih prenosov teksture; mediana osvežitve je bila 1,3 ms, 95. percentil 6,5 ms. To so lokalne meritve tega preizkusa. Pri novi opombi je položaj na dolgi strani ostal 11299 px pred in po kliku; tudi preizkus v vgrajenem brskalniku je ohranil položaj. Rezultati, parametri in slike so shranjeni v OUTPUT.
+
+---
+
+# Šesti pregled — različica 2.3.0, 14. 10. 2026
+
+- Zavihki imajo nastavljiv navpični odmik za odtrganje (privzeto 28 px). Okno z enim zavihkom se premika neposredno; odtrgan zavihek iz maksimiziranega okna uporabi njegovo normalno velikost. Pri priključevanju se animirano pokaže mesto vstavljanja in premaknejo sosednji zavihki. Vlečenje desnega zavihka uporablja tudi prazni del vrstice.
+- Risarski meni ima štiri sive odtenke, zaobljene obrobljene gumbe in okvir opcij pod njihovim naslovom. Barva, pisava/slog ter predogled pod risbo imajo dosledne naslove. Font je poleg B/I, drsniki so modri, gumbi dialogov pa levo poravnani.
+- Filter puščic ima ločeni nastavitvi za dolžino poti in najmanjšo valovno dolžino. Koordinati x(s) in y(s) sta filtrirani z jedrom treh zaporednih nizkoprepustnih stopenj; smer določi odvod na koncu filtrirane poti. Pri šibkem odvodu smer ostane stabilna. Omejitev obračanja deluje že od prvega premika; stare risbe brez nove nastavitve uporabijo svojo prvotno persistenčno dolžino tudi kot valovno dolžino.
+- Polja za opombe so naravno rastoča urejevalna polja. Ni več začasnega skrčenja besedilnega polja pri merjenju višine ali obnove celotnega seznama ob novi opombi, menjavi ocene oziroma koncu urejanja zahteve.
+- Slike se lepijo neposredno v polje osnovne zahteve ali posamezne opombe, tudi v pojavnem oknu za novo zahtevo. Ostanejo vezane na svojo fazo, tudi ko opomba postane zgodovinska. Štiri znane stare slike so povezane z ustreznimi opombami, preostale neoznačene slike ostanejo pri osnovni zahtevi. Ocene, besedila in arhiv uporabnika so ohranjeni.
+
+Preverjanje vključuje dejanske vnose miške pri priključevanju zavihkov in risanju tresoče poti, dva prikaza dolge preglednice različnih širin, več zaporednih opomb, slike v trenutni in zgodovinski opombi, obnovo po ponovnem nalaganju ter nastanek naslednjega prompta. V vgrajenem brskalniku je položaj po dolgi opombi ostal 23655 px, po opombi s sliko pa 23816 px; prilepljena slika iz odložišča se je shranila v pravo fazo. Ločene testne kopije so v OUTPUT in niso del uporabnikovih ocen.

@@ -124,7 +124,7 @@ function redrawDrawings(){
   ctx.restore();renderRaster();
 }
 function penColor(){const rgb=Visual.hsv(drawingOptions.hue,drawingOptions.saturation,drawingOptions.brightness);return `rgba(${rgb.map(Math.round).join(',')},${drawingOptions.alpha})`;}
-function newStroke(polyline){return {kind:drawingOptions.tool==='eraser'?'eraser':'line',points:[],color:penColor(),width:drawingOptions.tool==='eraser'?(drawingOptions.eraserWidth||20):drawingOptions.arrow?(drawingOptions.arrowLineWidth||drawingOptions.width):drawingOptions.width,arrow:drawingOptions.arrow&&drawingOptions.tool!=='eraser',arrowWidth:drawingOptions.arrowWidth,arrowHeight:drawingOptions.arrowHeight,arrowStyle:drawingOptions.tool==='arrowOpen'?'open':'filled',arrowPersistence:drawingOptions.arrowPersistence,polyline};}
+function newStroke(polyline){return {kind:drawingOptions.tool==='eraser'?'eraser':'line',points:[],color:penColor(),width:drawingOptions.tool==='eraser'?(drawingOptions.eraserWidth||20):drawingOptions.arrow?(drawingOptions.arrowLineWidth||drawingOptions.width):drawingOptions.width,arrow:drawingOptions.arrow&&drawingOptions.tool!=='eraser',arrowWidth:drawingOptions.arrowWidth,arrowHeight:drawingOptions.arrowHeight,arrowStyle:drawingOptions.tool==='arrowOpen'?'open':'filled',arrowPersistence:drawingOptions.arrowPersistence,arrowMinWavelength:drawingOptions.arrowMinWavelength,polyline};}
 function boundedPoint(event){const b=stage.getBoundingClientRect(),r=rect(),screen={x:C.clamp(event.clientX-b.left,r.cx-r.bw*r.scale/2,r.cx+r.bw*r.scale/2),y:C.clamp(event.clientY-b.top,r.cy-r.bh*r.scale/2,r.cy+r.bh*r.scale/2)};return Visual.toSource(r,screen);}
 function drawingDown(event){
   const tab=current();if(tab.meta.isAudio)return;const p=boundedPoint(event);

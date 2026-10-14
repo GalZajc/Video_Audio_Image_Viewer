@@ -44,7 +44,7 @@ Escape acts on **key release**. It closes editing modes, leaves an expanded time
 
 Ctrl+wheel zooms a paused video or image around the pointer; Ctrl+left drag pans, including while drawing. Pixels remain sharp square cells. R places a movable blue rotation pivot at the pointer, preserving its position and the current scale during rotation.
 
-Tabs start at a fixed width and shrink when space is limited. Drag to reorder or tear a tab into another window. During detachment it is already a full-size viewer window; the tab keeps its old width and horizontal slot until release, then animates into place. Middle-click or the close symbol closes a tab. Hover shows its full path; double-click reveals the file in Explorer. External file opens go to the last-used viewer window.
+Tabs start at a fixed width and shrink when space is limited. Drag to reorder or tear a tab into another window. Settings control the vertical detach distance (28 pixels by default, one tab-bar height). The new window uses the source window's restored size even when the source is maximized. With one tab, the existing window moves directly instead of creating a duplicate. Hovering over another tab strip displays an animated insertion slot; release docks the tab there. Unused strip space stays available when dragging the rightmost tab. Middle-click or the close symbol closes a tab. Hover shows its full path; double-click reveals the file in Explorer. External file opens go to the last-used viewer window.
 
 Click the media icon to choose any of the seven video/audio/image combinations for folder navigation. Settings control sorting and direction. Per-file view state and annotations are retained when cycling through a folder.
 
@@ -56,7 +56,7 @@ The crop stays horizontal and vertical after rotation and can include the backgr
 
 The gray drawing accordion offers freehand lines, filled arrows, open V arrows, text and an eraser. The tool preview uses the same pixel scale as the picture. Full-width color swatches open the shared HSV/RGBA picker, with alpha and normalized or byte values. Click a slider endpoint to edit that limit separately; double-click its thumb to enter an exact value.
 
-Arrow orientation uses spatial smoothing over a selected persistence length. Larger persistence reduces rapid direction changes. The recorded curve is retained through its endpoint. Shift+click adds polyline vertices; an existing vertex finishes it. Ctrl+Shift+click constrains segments to 45-degree increments. A polyline arrow uses its exact final segment.
+Arrow orientation has two controls: **path length** (the retained path window) and **minimum wavelength** (the low-pass cutoff). The filter smooths both source-coordinate components as functions of distance along the path; the endpoint derivative determines orientation. Three cascaded low-pass stages suppress pixel jitter, and an unreliable derivative retains the previous direction. The displayed turn is bounded from the first movement. Larger values smooth more strongly but make the head follow bends more gradually. Filter terminology follows standard [signal filtering conventions](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.sosfilt.html); this viewer implements its own spatial filter in JavaScript. The recorded curve is retained through its endpoint. Shift+click adds polyline vertices; an existing vertex finishes it. Ctrl+Shift+click constrains segments to 45-degree increments. A polyline arrow uses its exact final segment.
 
 Text is entered directly into an initially horizontal box. Height follows the wrapped text; the right-middle dot changes width and the top-right dot rotates around the center. Fonts: Arial, Helvetica, Verdana, Consolas and Comic Sans. Dimensions use source pixels. B/I select bold/italic; Ctrl+Enter or clicking outside finishes entry.
 
@@ -84,7 +84,7 @@ Exports use the original media rather than the playback proxy, and include all t
 
 `config.json` centralizes parameters. `DATA/` holds preferences, tab history, cached media and the review checklist. `OUTPUT/` holds timestamped, reproducible export/test records, including parameters and FFmpeg commands. Neither directory is published in the repository or portable release.
 
-**Review features.vbs** starts the local checklist at `127.0.0.1:41837`. It supports checked, failed, assumed and unreviewed states, successive notes, pasted screenshots, editable requirements and reversible archiving. It generates the next development prompt. Adding a note preserves page position without moving focus into a newly resized textarea.
+**Review features.vbs** starts the local checklist at `127.0.0.1:41837`. It supports checked, failed, assumed and unreviewed states, successive notes, pasted screenshots, editable requirements and reversible archiving. It generates the next development prompt. Notes grow naturally with their text; adding a note preserves page position without collapsing and measuring a focused textarea. Paste images directly into the requirement or an individual note, including while creating a new requirement. Each image stays with its original phase when another note is added. Legacy unclassified images remain with the base requirement. The generated prompt includes phase labels for screenshots.
 
 **Set default viewer.vbs** registers file types and opens Windows Settings for confirmation. On current consumer Windows editions, registration alone does not prove Explorer activation; SVG is excluded. After moving the folder, recreate the shortcut and re-register file types.
 
@@ -101,6 +101,9 @@ npm run build
 npm test
 npm run test:review-round5
 npm run test:review-scroll
+npm run test:review-phases
+npm run test:tab-docking
+npm run test:drawing-controls
 ```
 
 Tests include real FFmpeg exports, inclusive frame boundaries, Unicode, VFR, pixel transforms, pointer-anchored zoom, arrow stability across repaint rates and reversals, full-size detached windows, 4K eraser updates, and checklist scrolling after a long note. Results are saved under timestamped `OUTPUT/` directories. Local timing measurements depend on hardware.
