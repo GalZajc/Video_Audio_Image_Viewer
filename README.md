@@ -175,3 +175,15 @@ Showing a held tear-out window requests its current drawing state again, so prev
 Text move and insertion cursors match the existing resize/rotation cursor style, follow the displayed text angle and use its color. OCR insertion cursors follow each recognized word polygon; their light-blue color is set in config.extras.ocrCursorColor.
 
 Validation includes unchanged real Windows clipboard content while all three available history images are imported, gallery pixel deduplication, native maximized-window tear-out before mouse release, exact 8×8 preview pixel blocks, fractional hue-wheel edge alpha, rotated editor/OCR cursor geometry, and the previous tool/profile/OCR/text-trail scenarios. `npm run test:clipboard-history` reads the current Windows history without adding test entries; `npm run test:review-round11` uses generated media in OUTPUT.
+
+## Version 2.9.0
+
+Ctrl+O uses nearly the entire viewer window. Screenshots load independently in the main gallery; clipboard images load in a separate column on the right. Pixel-identical items are shown only under Screenshots. Reopening or refocusing the dialog requests a fresh clipboard snapshot, and obsolete asynchronous replies cannot repopulate a newer view.
+
+Clipboard PNG copies remain in private DATA to restore opened tabs. **Show previously copied images no longer in the clipboard** is disabled by default: cached files are not a live clipboard source. Enabling the setting adds an explicitly labeled archive. Current WinRT history remains the authoritative list of live history items.
+
+Ctrl+C now shows a 600 ms light-blue overlay, configured in extras.copyFlashMs/copyFlashColor/copyFlashOpacity. The overlay does not enter the copied/exported pixels. Clipboard image tests use per-write Windows options that exclude their generated images from history and roaming.
+
+OCR groups local glyphs by line orientation, size and color, handles each region in both reading directions, and enlarges small regions before native recognition. Direction selection considers language plausibility and isolated digits. True polygon intersection prevents parallel slanted rows from being mistaken for duplicate words. Compatible line orientations are kept together in reading order. Recognition displays preparation progress and an active indicator during the Windows batch.
+
+The seeded [20-orientation test image](Images/ocr-20-orientations.png) and its [rendering parameters](Images/ocr-20-orientations.json) cover five fonts, 26–56 px sizes, colors, dark/light backgrounds, bold/italic and rotations through nearly a full turn. All 20 target words were recognized in the local test. This is a reproducible fixture result, not a guarantee for every image or character. Run `npm run test:ocr-stress`; results, the rendered image and all parameters are saved to OUTPUT. Optional VAP_OCR_SAMPLE and VAP_OCR_EXPECTED_JSON select a private comparison image and expected strings; those inputs are not bundled.

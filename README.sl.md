@@ -180,3 +180,11 @@ OCR poleg izvorne slike obdela do tri lokalna območja s poševnim besedilom in 
 Ctrl+O poleg trenutnega odložišča prebere tudi slike iz Windowsove zgodovine odložišča. Enake slike združi po pikslih in odstrani njihove podvojitve iz posnetkov zaslona. Zgodovino samo prebere ob odprtju galerije; je ne vklaplja ali spreminja. Če je izklopljena oziroma Windows dostop zavrne, to izpiše. Uvožene slike ostanejo v zasebni mapi DATA za obnovitev zavihkov. Podpora uporablja vgrajena Windows PowerShell in .NET Framework, brez dodatnega SDK.
 
 Predogled takoj prevzame merilo izvlečenega okna tudi iz povečanega okna. Črte, puščice in besedilo v predogledu imajo ostre izvorne piksle. Obrobe razširjenih gumbov so enotnega odtenka; rob barvnega kroga je zglajen. Kazalca za premik in tipkanje sledita zasuku ter barvi besedila, kazalci OCR pa zasuku posamezne besede.
+
+## Različica 2.9.0
+
+Ctrl+O zavzame skoraj celo okno. Posnetki zaslona se naložijo neodvisno, odložišče pa v ločenem desnem stolpcu. Skupne slike ostanejo samo med posnetki zaslona. Ob ponovnem odprtju oziroma vrnitvi fokusa se prebere novo stanje; zastarel odgovor ne sme povrniti že počiščenih slik.
+
+Kopije PNG v DATA ostanejo za obnovitev odprtih zavihkov. Nastavitev za prikaz prej kopiranih slik, ki jih ni več v odložišču, je privzeto izključena; datoteke v predpomnilniku niso vir trenutnega odložišča. Ctrl+C svetlo modro označi sliko za 600 ms, brez spremembe kopiranih pikslov.
+
+OCR obravnava lokalne vrstice ločeno glede na zasuk, velikost in barvo, preveri obe smeri branja ter pravilno združi zasukane štirikotnike. Prikazuje napredek priprave. Na ponovljivi testni sliki s semenom 20261015, petimi pisavami, 20 zasuki, barvami ter različnimi velikostmi in slogi je zaznal vseh 20 ciljnih besedil. Slika in parametri so v Images; to ni zagotovilo za poljubno drugo sliko ali vsak znak.

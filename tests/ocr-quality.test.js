@@ -1,0 +1,2 @@
+'use strict';const test=require('node:test'),assert=require('node:assert/strict'),{quality}=require('../ocr-regions');
+test('direction scoring retains isolated digits and Unicode title case without rewarding a digit embedded in reversed letters',()=>{assert.ok(quality({text:'123',language:'sl'})>quality({text:'EZI',language:'sl'}));assert.ok(quality({text:'Čudovito',language:'sl'})>quality({text:'çud0V!TO',language:'sl'}));assert.ok(quality({text:'Waveform',language:'sl'})>quality({text:'1UJOJanDM',language:'sl'}));});

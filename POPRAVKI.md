@@ -1,3 +1,13 @@
+# Dvanajsti pregled — 15. 10. 2026
+
+- Ctrl+C: svetlo moder odziv 600 ms, brez spremembe kopirane slike.
+- Skoraj celozaslonski Ctrl+O z ločeno glavno galerijo posnetkov in desnim stolpcem odložišča. Posnetki se ne zadržujejo zaradi branja zgodovine. Skupne slike so samo med posnetki.
+- Svež posnetek odložišča ob odprtju/fokusu, zavrnitev zastarelih odgovorov po ponovnem odprtju. Shranjene kopije so privzeto skrite in jih vključi ločena globalna nastavitev.
+- OCR: lokalne smeri/barve/velikosti, obe orientaciji, povečava drobnega besedila, pravilni preseki zasukanih štirikotnikov ter napredek. Preizkus z 20 različnimi besedili je ponovljiv prek shranjenega semena in parametrov v Images.
+- Preizkusi kopiranja svoje slike izključijo iz zgodovine odložišča Windows.
+
+Tri popravljene uporabnikove zahteve so namenjene ponovnemu pregledu; druge ocene in opombe ostanejo ohranjene.
+
 # Enajsti pregled — 15. 10. 2026
 
 - Galerija prebere tudi slike iz zgodovine odložišča Windows in jih združi s trenutno sliko brez podvojitev. Obstoječega odložišča in zgodovine ne spreminja. Preverjeno s tremi razpoložljivimi slikami.

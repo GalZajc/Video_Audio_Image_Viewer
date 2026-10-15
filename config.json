@@ -192,7 +192,8 @@
     "timelinePreviewWidth": 256,
     "timelinePreviewHeight": 144,
     "timelinePreviewFitAspect": true,
-    "tabDetachDistance": 28
+    "tabDetachDistance": 28,
+    "showRemovedClipboardImages": false
   },
   "associations": {
     "excluded": [
@@ -278,16 +279,16 @@
   },
   "extras": {
     "clipboardMaxBytes": 67108864,
-    "copyFlashMs": 240,
+    "copyFlashMs": 600,
     "screenshotPageSize": 48,
     "screenshotThumbWidth": 160,
     "screenshotThumbCache": 192,
-    "ocrTimeoutMs": 30000,
+    "ocrTimeoutMs": 90000,
     "ocrMaxInputBytes": 67108864,
     "ocrDimOpacity": 0.58,
     "ocrBackground": "#080808",
     "ocrOrientation": {
-      "analysisMaximumDimension": 1024,
+      "analysisMaximumDimension": 2048,
       "analysisRadius": 7,
       "analysisContrast": 25,
       "analysisSaturation": 90,
@@ -296,20 +297,26 @@
       "componentMinimumHeight": 5,
       "componentHeightRatio": 2,
       "pairDistanceHeights": 4,
-      "minimumTilt": 7,
-      "maximumTilt": 80,
-      "angleBinDegrees": 5,
-      "maximumCandidates": 3,
-      "candidateSeparation": 15,
-      "minimumPairs": 2,
-      "regionPaddingHeights": 0.7,
+      "regionPaddingHeights": 0.8,
       "duplicateOverlap": 0.5,
       "passMaximumDimension": 3072,
-      "minimumPassCharacters": 3
+      "minimumPassCharacters": 3,
+      "maximumRegions": 48,
+      "regionPairDistance": 2.4,
+      "regionBandWidth": 0.45,
+      "regionMaximumLength": 18,
+      "regionMaximumGap": 2,
+      "regionMinimumLetters": 3,
+      "minimumPassTextHeight": 64,
+      "regionDuplicateAngleDegrees": 12,
+      "colorRegionPriority": 2
     },
     "clipboardGalleryMaximumItems": 32,
     "clipboardGalleryMaximumBytes": 67108864,
     "clipboardHistoryTimeoutMs": 15000,
-    "ocrCursorColor": "#87d8ff"
+    "ocrCursorColor": "#87d8ff",
+    "copyFlashColor": "#87d8ff",
+    "copyFlashOpacity": 0.2,
+    "screenshotIndexCacheMs": 800
   }
 }

@@ -112,7 +112,7 @@ ipcMain.handle('settings',async(_event,value)=>{
   for(const key of Object.keys(formats))if(formats[key].includes(value[key]))settings[key]=value[key];
   if(['sl','en'].includes(value.language))settings.language=value.language;
   if(['name','modified','created','size'].includes(value.folderSort))settings.folderSort=value.folderSort;
-  for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit','timelinePreviewFitAspect','linkDrawingTools'])if(typeof value[key]==='boolean')settings[key]=value[key];
+  for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit','timelinePreviewFitAspect','linkDrawingTools','showRemovedClipboardImages'])if(typeof value[key]==='boolean')settings[key]=value[key];
   if(typeof value.backgroundColor==='string'&&/^#[0-9a-f]{8}$/i.test(value.backgroundColor))settings.backgroundColor=value.backgroundColor;
   if(value.shortcuts){const next={};for(const key of Object.keys(defaults.shortcuts)){const binding=value.shortcuts[key];if(typeof binding!=='string'||!/^(?:(?:Ctrl|Alt|Shift|Meta|Escape)\+)*(?:Key[A-Z]|Digit[0-9]|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Space|Comma|Period|Tab|Escape|Backspace|Delete|Enter|Home|End|PageUp|PageDown|BracketLeft|BracketRight|Minus|Equal|Slash|Semicolon|Quote|Backquote|F(?:[1-9]|1[0-2]))$/.test(binding))throw new Error('Neveljavna bližnjica.');next[key]=binding;}if(new Set(Object.values(next)).size!==Object.keys(next).length)throw new Error('Bližnjice se ne smejo ponavljati.');settings.shortcuts=next;}
   if(value.drawingCustomization&&typeof value.drawingCustomization==='object'&&JSON.stringify(value.drawingCustomization).length<65536)settings.drawingCustomization=JSON.parse(JSON.stringify(value.drawingCustomization));
