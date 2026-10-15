@@ -1,10 +1,12 @@
 'use strict';
 let stroke=null,strokeHover=null,drawingOptions=null,navigating=false,typeTab=null,exportTab=null;
+FolderUI.closeButton($('exportMenu'));
 const englishActions={playPause:'Play / pause',seekBack:'Back 5 seconds',seekForward:'Forward 5 seconds',frameBack:'Previous frame',frameForward:'Next frame',slower:'Speed −10 percentage points',faster:'Speed +10 percentage points',markIn:'I — first frame (inclusive)',markOut:'O — last frame (inclusive)',crop:'Show / hide crop rectangle',escape:'Close overlay → timeline → view → fit window',export:'Export selection / image',open:'Open files',newTab:'Open in a new tab',closeTab:'Close tab',restoreTab:'Restore closed tab',nextTab:'Next tab',previousTab:'Previous tab',settings:'Settings',fillWindow:'Show / hide tab strip',fullscreen:'Fullscreen',volumeUp:'Volume up',volumeDown:'Volume down',mute:'Mute / unmute',resetView:'Reset zoom and pan',clearSelection:'Clear interval and crop',rotate:'Rotation slider',flipHorizontal:'Mirror across original Y axis',flipVertical:'Mirror across original X axis',draw:'Pencil / arrows',undo:'Undo drawing',redo:'Redo drawing',folderPrevious:'Previous file in folder',folderNext:'Next file in folder',deleteFile:'Move file to Recycle Bin'};
 Object.assign(actions,{rotate:'Rotacija',flipHorizontal:'Zrcali čez izvirno os Y',flipVertical:'Zrcali čez izvirno os X',draw:'Svinčnik / puščice',undo:'Razveljavi risanje',redo:'Ponovi risanje',folderPrevious:'Prejšnja datoteka v mapi',folderNext:'Naslednja datoteka v mapi',deleteFile:'Premakni datoteko v koš'});
 function tr(sl,en){return settings?.language==='en'?en:sl;}
 function localize(){
   document.documentElement.lang=settings.language;
+  FolderUI.localize();
   for(const el of document.querySelectorAll('[data-sl]'))el.textContent=el.dataset[settings.language]||el.dataset.sl;
   $('settingsButton').title=tr('Nastavitve','Settings');$('closeSettings').setAttribute('aria-label',tr('Zapri nastavitve','Close settings'));
   $('languageSl').classList.toggle('selected',settings.language==='sl');$('languageEn').classList.toggle('selected',settings.language==='en');
@@ -93,8 +95,8 @@ async function deleteCurrent(){
 async function showExportMenu(tab){
   const locations=await window.player.exportFolders({id:tab.meta.id,kind:effectiveExportKind(tab)});exportTab=tab;localize();$('exportChoices').replaceChildren();$('recentFolders').replaceChildren();
   const labels={source:tr('Mapa izvirne datoteke','Source folder'),downloads:tr('Prenosi','Downloads'),video:tr('Videoposnetki','Videos'),audio:tr('Glasba','Music'),image:tr('Slike','Pictures')};
-  function row(parent,dir,label){const button=document.createElement('button');button.className='folderChoice';button.title=dir;const strong=document.createElement('span'),small=document.createElement('small');strong.textContent=label;small.textContent=dir;button.append(strong,small);button.addEventListener('click',()=>{$('exportMenu').close();exportToFolder(tab,dir);});parent.append(button);}
-  for(const item of locations.choices)row($('exportChoices'),item.path,labels[item.key]);
+  function row(parent,dir,label,key){const button=document.createElement('button');button.className='folderChoice';button.title=dir;FolderUI.decorate(button,key,label,dir);button.addEventListener('click',()=>{$('exportMenu').close();exportToFolder(tab,dir);});parent.append(button);}
+  for(const item of locations.choices)row($('exportChoices'),item.path,labels[item.key],item.key);
   for(const dir of locations.recent)row($('recentFolders'),dir,dir.split(/[\\/]/).filter(Boolean).at(-1));
   $('exportVideo').value=settings.videoFormat;$('exportAudio').value=settings.audioFormat;$('exportImage').value=settings.imageFormat;$('exportQuality').checked=settings.matchSource;
   initExportExtras(tab);

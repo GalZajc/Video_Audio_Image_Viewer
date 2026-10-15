@@ -1,3 +1,11 @@
+# Trinajsti pregled — 15. 10. 2026
+
+- Ctrl+O zavzame celotno Electron okno. Drsnika galerije in odložišča sta široka 6 px; odložišče ima stalen stolpec z enako velikimi sličicami kot posnetki zaslona.
+- Ctrl+O in Ctrl+S imata barvne Windowsove ikone glavnih map ter majhen gumb ×. Ikone so vključene kot lokalni PNG; izvajanje ne potrebuje Windowsovih knjižnic ikon. Druge mape uporabljajo navadno ikono mape.
+- Neodvisno nalaganje galerije in odložišča ter varovanje pred zastarelimi odgovori ostajata ohranjena.
+
+Ena popravljena zahteva je namenjena ponovnemu uporabnikovemu pregledu; druge ocene in opombe so ohranjene.
+
 # Dvanajsti pregled — 15. 10. 2026
 
 - Ctrl+C: svetlo moder odziv 600 ms, brez spremembe kopirane slike.

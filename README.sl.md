@@ -188,3 +188,5 @@ Ctrl+O zavzame skoraj celo okno. Posnetki zaslona se naložijo neodvisno, odlož
 Kopije PNG v DATA ostanejo za obnovitev odprtih zavihkov. Nastavitev za prikaz prej kopiranih slik, ki jih ni več v odložišču, je privzeto izključena; datoteke v predpomnilniku niso vir trenutnega odložišča. Ctrl+C svetlo modro označi sliko za 600 ms, brez spremembe kopiranih pikslov.
 
 OCR obravnava lokalne vrstice ločeno glede na zasuk, velikost in barvo, preveri obe smeri branja ter pravilno združi zasukane štirikotnike. Prikazuje napredek priprave. Na ponovljivi testni sliki s semenom 20261015, petimi pisavami, 20 zasuki, barvami ter različnimi velikostmi in slogi je zaznal vseh 20 ciljnih besedil. Slika in parametri so v Images; to ni zagotovilo za poljubno drugo sliko ali vsak znak.
+
+Ctrl+O zapolni okno pregledovalnika. Galerija posnetkov in stalen stolpec odložišča imata enako velike sličice ter ozka drsnika. Menija Ctrl+O in Ctrl+S imata majhen gumb za zapiranje in vključene Windowsove ikone map v obliki PNG, brez iskanja ikon v sistemu med uporabo. Razvojna skripta `scripts/capture-folder-icons.ps1` lahko osveži priložene ikone na Windowsu.
