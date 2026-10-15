@@ -251,7 +251,8 @@
     "arrowFilterStep": 1,
     "arrowDerivativeFraction": 0.125,
     "arrowMinFilterStep": 0.25,
-    "arrowMaxSegmentSteps": 64
+    "arrowMaxSegmentSteps": 64,
+    "liveBoundsPadding": 3
   },
   "preview": {
     "quantizeSeconds": 0.25,
@@ -281,6 +282,30 @@
     "screenshotThumbCache": 192,
     "ocrTimeoutMs": 30000,
     "ocrMaxInputBytes": 67108864,
-    "ocrDimOpacity": 0.58
+    "ocrDimOpacity": 0.58,
+    "ocrBackground": "#080808",
+    "ocrOrientation": {
+      "analysisMaximumDimension": 1024,
+      "analysisRadius": 7,
+      "analysisContrast": 25,
+      "analysisSaturation": 90,
+      "analysisColorMinimum": 30,
+      "componentMinimumArea": 4,
+      "componentMinimumHeight": 5,
+      "componentHeightRatio": 2,
+      "pairDistanceHeights": 4,
+      "minimumTilt": 7,
+      "maximumTilt": 80,
+      "angleBinDegrees": 5,
+      "maximumCandidates": 3,
+      "candidateSeparation": 15,
+      "minimumPairs": 2,
+      "regionPaddingHeights": 0.7,
+      "duplicateOverlap": 0.5,
+      "passMaximumDimension": 3072,
+      "minimumPassCharacters": 3
+    },
+    "clipboardGalleryMaximumItems": 16,
+    "clipboardGalleryMaximumBytes": 67108864
   }
 }

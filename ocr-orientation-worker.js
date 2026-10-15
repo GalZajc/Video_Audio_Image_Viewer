@@ -1,0 +1,1 @@
+'use strict';const {parentPort,workerData}=require('node:worker_threads');parentPort.postMessage(require('./ocr-layout').orientations(new Uint8Array(workerData.pixels),workerData.width,workerData.height,workerData.options));

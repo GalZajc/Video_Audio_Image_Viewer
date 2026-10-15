@@ -149,3 +149,17 @@ Text boxes use their text color for the frame and handles, provide a center tran
 Tab reordering excludes the held tab from sibling animations, cancels superseded animations and adds a small hysteresis to the shared slot threshold. Held tabs retain ownership of drawing palettes. Detachment waits for actual media content and reuses metadata when file size/mtime are unchanged, avoiding the empty logo frame.
 
 Arrow rasterization now tapers only the terminal arc. Earlier visits to the same region remain in a separate opaque coverage mask; the final color/alpha is applied once, preserving transparent self-crossings. The existing direction and whole-curve smoothing filters remain unchanged.
+
+## Version 2.7.0
+
+Drawing previews retain the held tab's full tool configuration and media scale during tear-out/docking. Resizing the viewer updates the preview immediately. Delayed palette saves update only drawing preferences, preventing them from overwriting a newer shared-tool setting.
+
+Freehand drawing caches the committed raster and repaints/uploads only the active path's affected region. Committing a fully rendered stroke reuses that raster. Gaussian geometry, arrow direction and export output are unchanged. In a local 4K fixture with 80,000 committed points, 130 updates and a 256-pixel smoothing wavelength, p95 repaint times fell from 100.7/43.0/56.9 ms to 10.5/7.8/9.2 ms for lines/filled arrows/open arrows. Full-reference pixel comparisons and mouse-up comparisons were identical. These measurements depend on hardware and stroke shape.
+
+Ctrl+O also shows images in the **current clipboard**, importing them into private DATA for persistent tabs. Pixel-identical Screenshots entries are suppressed, independent of their file encoding. This does not read Windows clipboard history.
+
+Moving rotated text boxes forces a clean raster refresh beneath the DOM editor. Rotation and resize cursors share the text color and line style.
+
+Windows OCR now analyzes text orientation off the UI thread and deskews up to three localized regions in addition to the original image. Native OCR text-angle geometry and each region's inverse transform produce selectable source-space polygons. This improves mixed upright/slanted text without rotating the entire image; recognition still depends on the installed Windows OCR languages and image quality. The overlay has a neutral background, hides editing controls temporarily and preserves pending text edits. No private Snipping Tool APIs or external recognition service are used.
+
+Validation: 35 unit/real-export checks, native tool ownership and live smoothing, clipboard deduplication, mixed-angle OCR, text movement pixel comparisons and the 4K drawing benchmark. Run `npm run test:review-round10` and `npm run test:drawing-performance`; optional `VAP_OCR_SAMPLE` selects a local comparison image without bundling it.

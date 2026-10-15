@@ -45,7 +45,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
    let ctx,target;if(single){target=source.window;ctx=source;}else{
     if(!spare||spare.window.isDestroyed())warm();ctx=spare;spare=null;target=ctx.window;target.setBounds(b);ctx.dragPresentation=presentation;
    }
-   drag={source,sourceId:id,sender:event.sender,window:target,ctx,tab:value.tab,kind:value.kind,point:value,offset:value.offset||0,fraction:value.fraction??.5,wasOnTop:target.isAlwaysOnTop(),grabX:value.grabX,grabY:value.grabY,outside:!!value.visible,single,visible:false,promoted:false,timer:null,target:null};
+   drag={source,sourceId:id,sender:event.sender,window:target,ctx,tab:value.tab,kind:value.kind,point:value,initialScale:value.scale||1,offset:value.offset||0,fraction:value.fraction??.5,wasOnTop:target.isAlwaysOnTop(),grabX:value.grabX,grabY:value.grabY,outside:!!value.visible,single,visible:false,promoted:false,timer:null,target:null};
    drag.cleanup=()=>dispose(drag);candidates.set(id,drag);
    drag.ready=ctx.loaded.then(async()=>{
     if(candidates.get(id)!==drag)return;
@@ -78,5 +78,5 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
   }else throw Error('The tab drag has ended.');
   source.state.tabs=source.state.tabs.filter(t=>t.instanceId!==tab.instanceId);await saveWindows();if(process.env.VAP_TEST_MODE!=='1'){target.window.show();target.window.focus();}return {windowId:target.window.id};
  });
- return {getHeldDrawing:()=>{const d=[...candidates.values()].find(d=>d.outside);return d?{tab:d.tab,source:d.source}:null;},getDragWindows:()=>[...candidates.values()].map(d=>d.window)};
+ return {getHeldDrawing:()=>{const d=[...candidates.values()].find(d=>d.outside);return d?{tab:d.tab,source:d.source,context:d.target||d.ctx,scale:d.initialScale}:null;},getDragWindows:()=>[...candidates.values()].map(d=>d.window)};
 };

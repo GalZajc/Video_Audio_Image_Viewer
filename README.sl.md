@@ -164,3 +164,13 @@ Ctrl+Shift+O odpre ločen prikaz za označevanje besedila z lokalnim Windowsovim
 Tekstovna škatla ima svojo barvo, sredinski ročaj za premikanje in kazalec za širino, ki se vrti skupaj z njo. Risarska menija imata majhen simetričen spodnji rob in popravljene enojne obrobe. Med držanjem zavihka ostaneta vezana nanj; zavihek nima nasprotujoče animacije ali nihanja ob meji. Novo okno se pokaže šele z naloženo vsebino, že znani nespremenjeni posnetki pa se ponovno ne analizirajo.
 
 Pri puščici se omejuje samo zadnji del poti; predhodni obhodi istega območja se ohranijo. Prosojnost se uporabi enkrat na združeni geometriji. Filtra smeri in glajenja ostaneta enaka.
+
+## Različica 2.7.0
+
+Predogled risanja ohrani nastavitve in merilo zavihka med vlečenjem ter se takoj prilagodi velikosti okna. Zakasnjeno shranjevanje risarske palete ne prepiše nove izbire skupnih nastavitev.
+
+Risanje uporablja predpomnilnik končanih potez in osvežuje le prizadeto območje. V lokalnem testu 4K z 80.000 točkami je p95 izrisa padel s 43–101 ms na 8–11 ms; slike in zaključene poteze so po piksljih enake referenčnemu izrisu. Rezultati so odvisni od računalnika in oblike poteze.
+
+Ctrl+O pokaže tudi slike iz trenutnega odložišča ter izloči podvojene posnetke zaslona z enakimi piksli. Ne bere zgodovine odložišča Windows. Premikanje tekstovne škatle ne pušča sledi; kazalca za vrtenje in širino imata usklajen slog in barvo besedila.
+
+OCR poleg izvorne slike obdela do tri lokalna območja s poševnim besedilom in pravilno preslika njihove označbe nazaj na izvorne piksle. Ozadje je nevtralno, urejevalni ročaji so začasno skriti, nedokončano besedilo ostane nedotaknjeno. Prepoznavanje še vedno temelji na lokalnem Windows OCR in nameščenih jezikih.

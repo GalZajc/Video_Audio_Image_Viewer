@@ -1,7 +1,7 @@
 'use strict';
 const {BrowserWindow}=require('electron'),fs=require('node:fs'),path=require('node:path');
 module.exports=function({ipcMain,screen,defaults,contextFor,data,getSettings,getHeldDrawing}){
- const windows=new Map(),snapshots=new Map(),file=path.join(data,'tool-windows.json');let owner=null,snapshot=null,bounds={},sharedOptions=null,linked=false,stopping=false;
+ const windows=new Map(),snapshots=new Map(),file=path.join(data,'tool-windows.json');let owner=null,snapshot=null,bounds={},sharedOptions=null,linked=!!getSettings()?.linkDrawingTools,stopping=false;
  const copy=value=>JSON.parse(JSON.stringify(value));
  try{bounds=JSON.parse(fs.readFileSync(file,'utf8'));}catch{}
  function save(){fs.mkdirSync(data,{recursive:true});fs.writeFileSync(file,JSON.stringify(bounds,null,2),'utf8');}
@@ -17,10 +17,10 @@ module.exports=function({ipcMain,screen,defaults,contextFor,data,getSettings,get
   win.loadFile(path.join(__dirname,'tool-windows.html'),{query:{kind}}).then(()=>{if(win.isDestroyed())return;if(snapshot)win.webContents.send('drawing-tool-state',snapshot);if(snapshot?.visible&&process.env.VAP_TEST_MODE!=='1'){win.showInactive();win.moveTop();}}).catch(error=>{if(!win.isDestroyed())console.error(error.message);});return win;
  }
  function apply(ctx,value){
-  if(ctx.window.isDestroyed()||ctx.temporary)return;const held=getHeldDrawing?.();if(held&&held.source===ctx&&held.tab.instanceId!==value.tabId){value={...value,tabId:held.tab.instanceId,visible:!!held.tab.drawActive&&!held.tab.path.match(/\.(mp3|wav|flac|m4a|ogg)$/i),options:held.tab.toolOptions||snapshot?.options||value.options};}owner=ctx;linked=!!getSettings()?.linkDrawingTools;
-  if(linked&&!sharedOptions)sharedOptions=copy(value.options);
-  snapshot={...value,options:copy(linked?sharedOptions:value.options),ownerId:ctx.window.webContents.id};
-  if(linked&&JSON.stringify(value.options)!==JSON.stringify(sharedOptions))ctx.window.webContents.send('drawing-tools-options',{options:sharedOptions,linked:true});
+  if(ctx.window.isDestroyed()||ctx.temporary)return;const held=getHeldDrawing?.();if(held&&held.source===ctx&&held.tab.instanceId!==value.tabId){value={...value,tabId:held.tab.instanceId,visible:!!held.tab.drawActive&&!held.tab.path.match(/\.(mp3|wav|flac|m4a|ogg)$/i),options:held.tab.toolOptions||snapshot?.options||value.options,scale:(snapshots.get(held.context.window.webContents.id)?.value?.tabId===held.tab.instanceId?snapshots.get(held.context.window.webContents.id).value.scale:held.scale)};}owner=ctx;
+  const useShared=!!getSettings()?.linkDrawingTools;if(useShared&&!sharedOptions)sharedOptions=copy(value.options);
+  snapshot={...value,options:copy(useShared?sharedOptions:value.options),ownerId:ctx.window.webContents.id};
+  if(useShared&&JSON.stringify(value.options)!==JSON.stringify(sharedOptions))ctx.window.webContents.send('drawing-tools-options',{options:sharedOptions,linked:true});
   for(const kind of ['palette','color']){let win=windows.get(kind);if((!win||win.isDestroyed())&&snapshot.visible)win=create(kind);if(!win||win.isDestroyed())continue;
    win.webContents.send('drawing-tool-state',snapshot);if(snapshot.visible){win.setAlwaysOnTop(true,'screen-saver');if(!win.isVisible()&&process.env.VAP_TEST_MODE!=='1'){win.showInactive();win.moveTop();}}else win.hide();
   }
@@ -39,7 +39,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,data,getSettings,get
  }
  function toolEvent(event){return [...windows.values()].some(win=>!win.isDestroyed()&&win.webContents.id===event.sender.id);}
  ipcMain.on('drawing-tools-sync',(event,value)=>{
-  const ctx=contextFor(event);if(ctx.temporary||!value?.options)return;snapshots.set(event.sender.id,{ctx,value});
+  const ctx=contextFor(event);if(!value?.options)return;const held=getHeldDrawing?.();if(ctx.temporary){if(held?.context===ctx&&value.tabId===held.tab.instanceId){snapshots.set(event.sender.id,{ctx,value});apply(held.source,value);}return;}snapshots.set(event.sender.id,{ctx,value});if(held?.context===ctx&&value.tabId===held.tab.instanceId&&ctx!==held.source){apply(held.source,value);return;}
   if(getSettings()?.linkDrawingTools&&value.commit){sharedOptions=copy(value.options);broadcastShared();}
   if(owner&&owner!==ctx&&!ctx.window.isFocused()){if(value.commit&&getSettings()?.linkDrawingTools){const cached=snapshots.get(owner.window.webContents.id);if(cached)apply(owner,cached.value);}return;}
   if(!ctx._toolsCloseHook){ctx._toolsCloseHook=true;ctx.window.once('closed',()=>{snapshots.delete(event.sender.id);if(owner===ctx){owner=null;snapshot=null;hide();}});}

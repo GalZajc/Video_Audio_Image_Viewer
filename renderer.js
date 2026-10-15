@@ -21,7 +21,7 @@ function renderTabs(){
   $('tabs').replaceChildren();
   tabs.forEach((tab,index)=>{
     const el=document.createElement('div');el._tab=tab;el.className='tab'+(index===active?' active':'');el.role='tab';el.setAttribute('aria-selected',index===active?'true':'false');el.title=tab.meta.path;
-    const icon=document.createElement('button');icon.className='mediaIcons';icon.title=tr('Vrste datotek za prehajanje po mapi','File types for folder navigation');for(const kind of tab.state.mediaFilter||[tab.meta.kind]){const img=document.createElement('img');img.src='assets/'+kind+'.svg';img.alt=kind;icon.append(img);}icon.addEventListener('click',event=>{event.stopPropagation();showTypeMenu(tab,icon);});icon.addEventListener('dblclick',event=>event.stopPropagation());const name=document.createElement('span');name.className='name';name.textContent=tab.meta.name;const x=document.createElement('button');x.className='x';x.textContent='×';x.title=tr('Zapri zavihek','Close tab');x.setAttribute('aria-label',tr('Zapri ','Close ')+tab.meta.name);
+    const icon=document.createElement('button');icon.className='mediaIcons';icon.title=tr('Vrste datotek za prehajanje po mapi','File types for folder navigation');for(const kind of tab.state.mediaFilter||[tab.meta.kind]){const img=document.createElement('img');img.src='assets/'+kind+'.svg';img.alt=kind;icon.append(img);}icon.addEventListener('click',event=>{event.stopPropagation();showTypeMenu(tab,icon);});icon.addEventListener('dblclick',event=>event.stopPropagation());const name=document.createElement('span');name.className='name';name.textContent=tab.state.displayName||tab.meta.name;const x=document.createElement('button');x.className='x';x.textContent='×';x.title=tr('Zapri zavihek','Close tab');x.setAttribute('aria-label',tr('Zapri ','Close ')+tab.meta.name);
     x.addEventListener('click',event=>{event.stopPropagation();closeTab(tabs.indexOf(tab));});x.addEventListener('dblclick',event=>event.stopPropagation());
     el.append(icon,name,x);el.addEventListener('click',()=>{if(!suppressTabClick)activate(tabs.indexOf(tab));});
     el.addEventListener('auxclick',event=>{if(event.button===1){event.preventDefault();closeTab(tabs.indexOf(tab));}});
@@ -32,7 +32,7 @@ function renderTabs(){
       if(current()!==tab)activate(tabs.indexOf(tab));capture();
       const element=[...$('tabs').children].find(e=>e._tab===tab),bounds=element.getBoundingClientRect();
       tabDrag={tab,element,startX:event.clientX,startY:event.clientY,offset:event.clientX-bounds.left,fraction:(event.clientX-bounds.left)/bounds.width,originalLeft:bounds.left,single:tabs.length===1,moved:false,candidate:true};element.setPointerCapture(event.pointerId);
-      window.player.tabDragPreview({phase:'begin',visible:false,single:tabDrag.single,tab:serial(tab),kind:tab.meta.kind,left:bounds.left,width:bounds.width,offset:tabDrag.offset,fraction:tabDrag.fraction,grabX:event.clientX,grabY:event.clientY,x:event.screenX,y:event.screenY});
+      window.player.tabDragPreview({phase:'begin',visible:false,single:tabDrag.single,tab:serial(tab),kind:tab.meta.kind,left:bounds.left,width:bounds.width,scale:rect()?.scale||1,offset:tabDrag.offset,fraction:tabDrag.fraction,grabX:event.clientX,grabY:event.clientY,x:event.screenX,y:event.screenY});
     });
     $('tabs').append(el);
   });
@@ -241,7 +241,7 @@ stage.addEventListener('wheel',event=>{
   tab.state.view=Visual.zoom(r,tab.state.view,{x:event.clientX-b.left,y:event.clientY-b.top},factor,config.view.minZoom,config.view.maxZoom);
   layout();persistSoon();controls();
 },{passive:false});
-new ResizeObserver(layout).observe(stage);
+new ResizeObserver(()=>layout()).observe(stage);
 async function togglePlay(){if(!current()||!loaded||current().meta.isImage)return;stepTarget=null;if(video.paused){const s=current().state;if(s.timelineZoom&&s.in&&s.out&&(video.currentTime<s.in.time||video.currentTime>=s.out.time))seekTo(s.in.time);await video.play().catch(showError);}else video.pause();}
 function toggleCrop(){
   const tab=current();if(!tab||tab.meta.isAudio||!loaded)return;const s=tab.state;

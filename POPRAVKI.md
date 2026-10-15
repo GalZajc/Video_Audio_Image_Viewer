@@ -1,3 +1,14 @@
+# Deseti pregled — 15. 10. 2026
+
+- Predogled med vlečenjem uporablja nastavitve in merilo držanega zavihka; spreminjanje velikosti okna ga takoj osveži.
+- Galerija Ctrl+O vključuje trenutno odložišče in odstrani podvojene slike iz Screenshots.
+- Besedilna škatla pri premikanju ne pušča pikic; kazalca imata isti slog in barvo besedila.
+- OCR obravnava tudi lokalna poševna območja, označbe preslika v izvorne koordinate in uporablja nevtralno ozadje. Ohrani vse urejevalne načine in nedokončano besedilo.
+- Predpomnjeni izris končanih potez ter delne posodobitve GPU odpravijo glavni zastoj pri sprotnem glajenju. Pri 4K/80.000 točkah je p95 8–11 ms namesto 43–101 ms, brez razlik v referenčnih pikslih.
+- Popravljeno tekmovanje med zakasnjenim shranjevanjem palete in preklopom skupnih nastavitev.
+
+To so lokalna preverjanja. Pet uporabnikovih ocen ostane namenjenih ponovnemu pregledu, brez samodejnih kljukic.
+
 # Četrti pregled — 14. 10. 2026
 
 Predogledi brez posameznih zagonov FFmpeg in zavračanja sličic ob vsakem premiku, vidni predogled med prenosom zavihka, popravljena paleta, stalna debelina odprte konice, prostorsko umirjena smer, sredinski ročaj širine besedila, risanje po zavrtenih vogalih in izvoz teh risb. Nova opomba ne obnavlja celotnega seznama in ohrani scroll.

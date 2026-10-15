@@ -16,27 +16,15 @@
    while(grid.length*step<=end){const f=length?(grid.length*step-start)/length:0,p={x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f},previous=grid.at(-1);cache.integralX.push(cache.integralX.at(-1)+step*(previous.x+p.x)/2);cache.integralY.push(cache.integralY.at(-1)+step*(previous.y+p.y)/2);grid.push(p);}
   }
   cache.count=input.length;const length=arc.at(-1),first=input[0],last=input.at(-1);if(length<1e-9)return input;
-  function rawSample(d){const index=Math.min(grid.length-1,Math.floor(d/step)),a=grid[index],b=grid[index+1]||last,denominator=grid[index+1]?step:length-index*step,f=denominator?(d-index*step)/denominator:0;return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};}
-  function rawIntegral(d){const index=Math.min(grid.length-1,Math.floor(d/step)),a=grid[index],p=rawSample(d),ds=d-index*step;return {x:cache.integralX[index]+ds*(a.x+p.x)/2,y:cache.integralY[index]+ds*(a.y+p.y)/2};}
-  function integral(s){
-   if(s>=0&&s<=length)return rawIntegral(s);
-   if(s<0&&s>=-length){const p=rawIntegral(-s);return {x:p.x+2*first.x*s,y:p.y+2*first.y*s};}
-   if(s>length&&s<=2*length){const p=rawIntegral(2*length-s);return {x:p.x+2*last.x*(s-length),y:p.y+2*last.y*(s-length)};}
-   const n=Math.floor(s/(2*length)),t=s-n*2*length,p=integral(t),dx=last.x-first.x,dy=last.y-first.y;return {x:p.x+n*2*last.x*length+2*dx*length*n*(n-1)+2*n*dx*t,y:p.y+n*2*last.y*length+2*dy*length*n*(n-1)+2*n*dy*t};
-  }
-  function sample(s){
-   // Odd reflection gives exactly the recorded first and last point, without
-   // adding a straight terminal connector or translating the entire history.
-   if(s>=0&&s<=length)return rawSample(s);
-   if(s<0&&s>=-length){const p=rawSample(-s);return {x:2*first.x-p.x,y:2*first.y-p.y};}
-   if(s>length&&s<=2*length){const p=rawSample(2*length-s);return {x:2*last.x-p.x,y:2*last.y-p.y};}
-   const periods=Math.floor(s/(2*length)),t=s-periods*2*length,reflected=t>length,p=rawSample(reflected?2*length-t:t);
-   let x=p.x,y=p.y;if(reflected){x=2*last.x-x;y=2*last.y-y;}
-   return {x:x+periods*2*(last.x-first.x),y:y+periods*2*(last.y-first.y)};
-  }
+  // Scalar scratch values avoid allocating two objects for every kernel tap.
+  let px=0,py=0;
+  function rawSample(d){const index=Math.min(grid.length-1,Math.floor(d/step)),a=grid[index],b=grid[index+1]||last,denominator=grid[index+1]?step:length-index*step,f=denominator?(d-index*step)/denominator:0;px=a.x+(b.x-a.x)*f;py=a.y+(b.y-a.y)*f;}
+  function rawIntegral(d){const index=Math.min(grid.length-1,Math.floor(d/step)),a=grid[index],ds=d-index*step;rawSample(d);px=cache.integralX[index]+ds*(a.x+px)/2;py=cache.integralY[index]+ds*(a.y+py)/2;}
+  function integral(s){if(s>=0&&s<=length){rawIntegral(s);return;}if(s<0&&s>=-length){rawIntegral(-s);px+=2*first.x*s;py+=2*first.y*s;return;}if(s>length&&s<=2*length){rawIntegral(2*length-s);px+=2*last.x*(s-length);py+=2*last.y*(s-length);return;}const n=Math.floor(s/(2*length)),t=s-n*2*length;integral(t);px=px+n*2*last.x*length+2*(last.x-first.x)*length*n*(n-1)+2*n*(last.x-first.x)*t;py=py+n*2*last.y*length+2*(last.y-first.y)*length*n*(n-1)+2*n*(last.y-first.y)*t;}
+  function sample(s){if(s>=0&&s<=length){rawSample(s);return;}if(s<0&&s>=-length){rawSample(-s);px=2*first.x-px;py=2*first.y-py;return;}if(s>length&&s<=2*length){rawSample(2*length-s);px=2*last.x-px;py=2*last.y-py;return;}const periods=Math.floor(s/(2*length)),t=s-periods*2*length,reflected=t>length;rawSample(reflected?2*length-t:t);if(reflected){px=2*last.x-px;py=2*last.y-py;}px+=periods*2*(last.x-first.x);py+=periods*2*(last.y-first.y);}
   const bin=2*span/(cache.offsets.length-1),output=cache.output,begin=Math.max(0,Math.floor((cache.previousLength-span-bin/2-step)/step)),count=Math.floor(length/step)+1;
   output.length=count+1;
-  for(let i=begin;i<count;i++){const s=i*step;let x=0,y=0;for(let j=0;j<cache.offsets.length;j++){const center=s+cache.offsets[j],w=cache.weights[j];let p;if(bin>step){const a=integral(center-bin/2),b=integral(center+bin/2);p={x:(b.x-a.x)/bin,y:(b.y-a.y)/bin};}else p=sample(center);x+=w*p.x;y+=w*p.y;}output[i]={x,y};}
+  for(let i=begin;i<count;i++){const s=i*step;let x=0,y=0;for(let j=0;j<cache.offsets.length;j++){const center=s+cache.offsets[j],w=cache.weights[j];if(bin>step){integral(center-bin/2);const ax=px,ay=py;integral(center+bin/2);px=(px-ax)/bin;py=(py-ay)/bin;}else sample(center);x+=w*px;y+=w*py;}output[i]={x,y};}
   output[0]={...first};output[count]={...last};cache.previousLength=length;return output;
  }
  const api={points};if(typeof module!=='undefined')module.exports=api;else root.CurveFilter=api;
