@@ -174,3 +174,9 @@ Risanje uporablja predpomnilnik končanih potez in osvežuje le prizadeto območ
 Ctrl+O pokaže tudi slike iz trenutnega odložišča ter izloči podvojene posnetke zaslona z enakimi piksli. Ne bere zgodovine odložišča Windows. Premikanje tekstovne škatle ne pušča sledi; kazalca za vrtenje in širino imata usklajen slog in barvo besedila.
 
 OCR poleg izvorne slike obdela do tri lokalna območja s poševnim besedilom in pravilno preslika njihove označbe nazaj na izvorne piksle. Ozadje je nevtralno, urejevalni ročaji so začasno skriti, nedokončano besedilo ostane nedotaknjeno. Prepoznavanje še vedno temelji na lokalnem Windows OCR in nameščenih jezikih.
+
+## Različica 2.8.0
+
+Ctrl+O poleg trenutnega odložišča prebere tudi slike iz Windowsove zgodovine odložišča. Enake slike združi po pikslih in odstrani njihove podvojitve iz posnetkov zaslona. Zgodovino samo prebere ob odprtju galerije; je ne vklaplja ali spreminja. Če je izklopljena oziroma Windows dostop zavrne, to izpiše. Uvožene slike ostanejo v zasebni mapi DATA za obnovitev zavihkov. Podpora uporablja vgrajena Windows PowerShell in .NET Framework, brez dodatnega SDK.
+
+Predogled takoj prevzame merilo izvlečenega okna tudi iz povečanega okna. Črte, puščice in besedilo v predogledu imajo ostre izvorne piksle. Obrobe razširjenih gumbov so enotnega odtenka; rob barvnega kroga je zglajen. Kazalca za premik in tipkanje sledita zasuku ter barvi besedila, kazalci OCR pa zasuku posamezne besede.

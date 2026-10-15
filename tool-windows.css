@@ -2,5 +2,6 @@
 
 .toolRow:last-child{margin-bottom:0}.baseDirectionOption{display:flex;align-items:center;gap:6px;font-size:10px;line-height:1.4}.baseDirectionOption input{accent-color:var(--blue);margin:0;flex:none}.colorRow input[type=number]{height:26px;line-height:normal}dialog input[type=number]{height:30px;line-height:normal;padding:3px 4px}input[type=number]::-webkit-inner-spin-button{height:20px;margin:0;opacity:1}dialog input[type=number]::-webkit-inner-spin-button{height:22px}
 
-.expanded .toolIcon{border-bottom:1px solid #707070}.toolOptions>.parameter:first-child{border-top:0}.toolRow:last-child{margin-bottom:0}#colorPanel{display:flow-root}
+.expanded .toolIcon{border-bottom:1px solid #535353}.toolOptions>.parameter:first-child{border-top:0}.toolRow:last-child{margin-bottom:0}#colorPanel{display:flow-root}
+#toolPreview{image-rendering:pixelated}
 #openArrowParameters>.parameter:first-child{border-top:0}

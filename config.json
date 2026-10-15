@@ -252,7 +252,9 @@
     "arrowDerivativeFraction": 0.125,
     "arrowMinFilterStep": 0.25,
     "arrowMaxSegmentSteps": 64,
-    "liveBoundsPadding": 3
+    "liveBoundsPadding": 3,
+    "colorWheelEdgePixels": 1,
+    "previewMaximumPixels": 4194304
   },
   "preview": {
     "quantizeSeconds": 0.25,
@@ -305,7 +307,9 @@
       "passMaximumDimension": 3072,
       "minimumPassCharacters": 3
     },
-    "clipboardGalleryMaximumItems": 16,
-    "clipboardGalleryMaximumBytes": 67108864
+    "clipboardGalleryMaximumItems": 32,
+    "clipboardGalleryMaximumBytes": 67108864,
+    "clipboardHistoryTimeoutMs": 15000,
+    "ocrCursorColor": "#87d8ff"
   }
 }

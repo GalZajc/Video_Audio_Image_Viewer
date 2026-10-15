@@ -20,7 +20,7 @@ module.exports=function({ipcMain,screen,defaults,contextFor,liveWindows,windowCo
   }
  }
  function targetAt(drag,p){return liveWindows().find(c=>{if(c===drag.source||c.window.isMinimized())return false;const b=c.window.getBounds();return p.x>=b.x&&p.x<b.x+b.width-128&&p.y>=b.y&&p.y<b.y+defaults.view.tabAttachHeight;});}
- function reveal(drag){if(!drag.outside||drag.window.isDestroyed()||drag.target)return;const first=!drag.visible;drag.visible=true;drag.window.setOpacity(1);drag.window.setAlwaysOnTop(true,'floating');if(!drag.single&&!drag.window.isVisible())drag.window.showInactive();if(first)drag.window.moveTop();}
+ function reveal(drag){if(!drag.outside||drag.window.isDestroyed()||drag.target)return;const first=!drag.visible;drag.visible=true;drag.window.setOpacity(1);drag.window.setAlwaysOnTop(true,'floating');if(!drag.single&&!drag.window.isVisible())drag.window.showInactive();if(first){drag.window.moveTop();drag.window.webContents.send('drawing-tools-request');}}
  function update(drag){
   if(drag.window.isDestroyed())return;const p=point(drag),target=drag.outside?targetAt(drag,p):null;
   if(target!==drag.target){clearTarget(drag);drag.target=target;drag.lastTargetX=null;}

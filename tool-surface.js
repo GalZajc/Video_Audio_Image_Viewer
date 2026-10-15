@@ -43,14 +43,18 @@ function resizeSurface(){
  window.tools.size(height);
 }
 function paintPreview(){
- if(!options)return;const canvas=$('toolPreview'),tool=options.tool||'line';if(canvas.clientWidth&&canvas.width!==canvas.clientWidth)canvas.width=canvas.clientWidth;if(canvas.clientHeight&&canvas.height!==canvas.clientHeight)canvas.height=canvas.clientHeight;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
- if(tool==='eraser'){ctx.beginPath();ctx.arc(canvas.width/2,canvas.height/2,options.eraserWidth*scale/2,0,Math.PI*2);ctx.strokeStyle=cssColor(tool);ctx.lineWidth=1;ctx.stroke();return;}
- if(tool==='text'){ctx.save();ctx.translate(8,8);ctx.scale(scale,scale);Visual.draw(ctx,{kind:'text',x:0,y:0,boxWidth:10000,text:'ABC\nabc',font:options.font,fontSize:options.fontSize,bold:options.bold,italic:options.italic,color:cssColor(tool)});ctx.restore();return;}
- const arrow=['arrow','arrowOpen'].includes(tool),width=arrow?(options.arrowLineWidth||options.width):options.width;
- const points=Array.from({length:65},(_,i)=>{const t=i/64;return {x:(18+(canvas.width-44)*t)/scale,y:(64-28*Math.sin(t*Math.PI*1.2))/scale};}),line={kind:'line',points,width,color:cssColor(tool),arrow,arrowStyle:tool==='arrowOpen'?'open':'filled',arrowWidth:options.arrowWidth,arrowHeight:options.arrowHeight,arrowPersistence:options.arrowPersistence,arrowMinWavelength:options.arrowMinWavelength,curveMinWavelength:options[tool==='line'?'curveWavelengthLine':tool==='arrow'?'curveWavelengthArrow':'curveWavelengthOpen']||0,arrowBaseDirection:tool==='arrow'&&!!options.arrowBaseDirection};
- const head=arrow?Visual.arrowHead(line):null,extent=[...points,...(head?[head.tip,head.left,head.right,head.innerTip,head.leftInner,head.rightInner]:[])],xs=extent.map(p=>p.x*scale),ys=extent.map(p=>p.y*scale);
- ctx.save();ctx.translate((canvas.width-Math.max(...xs)-Math.min(...xs))/2,(canvas.height-Math.max(...ys)-Math.min(...ys))/2);ctx.scale(scale,scale);Visual.draw(ctx,line);ctx.restore();
+ if(!options)return;const canvas=$('toolPreview'),tool=options.tool||'line';if(canvas.clientWidth&&canvas.width!==canvas.clientWidth)canvas.width=canvas.clientWidth;if(canvas.clientHeight&&canvas.height!==canvas.clientHeight)canvas.height=canvas.clientHeight;const display=canvas.getContext('2d');display.clearRect(0,0,canvas.width,canvas.height);
+ if(tool==='eraser'){display.beginPath();display.arc(canvas.width/2,canvas.height/2,options.eraserWidth*scale/2,0,Math.PI*2);display.strokeStyle=cssColor(tool);display.lineWidth=1;display.stroke();return;}
+ const source=document.createElement('canvas'),density=Math.min(1,Math.sqrt(config.drawing.previewMaximumPixels/(canvas.width*canvas.height/scale**2)));source.width=Math.ceil(canvas.width/scale*density);source.height=Math.ceil(canvas.height/scale*density);const ctx=source.getContext('2d');ctx.scale(density,density);
+ if(tool==='text'){ctx.translate(8/scale,8/scale);Visual.draw(ctx,{kind:'text',x:0,y:0,boxWidth:10000,text:'ABC\nabc',font:options.font,fontSize:options.fontSize,bold:options.bold,italic:options.italic,color:cssColor(tool)});}
+ else{
+  const arrow=['arrow','arrowOpen'].includes(tool),width=arrow?(options.arrowLineWidth||options.width):options.width,points=Array.from({length:65},(_,i)=>{const t=i/64;return {x:(18+(canvas.width-44)*t)/scale,y:(64-28*Math.sin(t*Math.PI*1.2))/scale};}),line={kind:'line',points,width,color:cssColor(tool),arrow,arrowStyle:tool==='arrowOpen'?'open':'filled',arrowWidth:options.arrowWidth,arrowHeight:options.arrowHeight,arrowPersistence:options.arrowPersistence,arrowMinWavelength:options.arrowMinWavelength,curveMinWavelength:options[tool==='line'?'curveWavelengthLine':tool==='arrow'?'curveWavelengthArrow':'curveWavelengthOpen']||0,arrowBaseDirection:tool==='arrow'&&!!options.arrowBaseDirection};
+  const head=arrow?Visual.arrowHead(line):null,extent=[...points,...(head?[head.tip,head.left,head.right,head.innerTip,head.leftInner,head.rightInner]:[])],xs=extent.map(p=>p.x),ys=extent.map(p=>p.y);
+  ctx.translate((canvas.width/scale-Math.max(...xs)-Math.min(...xs))/2,(canvas.height/scale-Math.max(...ys)-Math.min(...ys))/2);Visual.draw(ctx,line);
+ }
+ display.imageSmoothingEnabled=false;display.drawImage(source,0,0,source.width*scale/density,source.height*scale/density);
 }
+
 function render(){
  if(!options||!config)return;document.documentElement.lang=language;
  for(const [id,sl,en] of [['textBold','Krepko','Bold'],['textItalic','Ležeče','Italic'],['eraserPreview','Predogled radiranja','Eraser preview'],['colorMode','Barvni prostor','Color space'],['colorUnits','Enote','Units'],['fontFamily','Pisava','Font']])$(id).title=$(id).ariaLabel=tr(sl,en);
@@ -78,7 +82,7 @@ function renderColor(){
 for(const [id,key] of [['colorMode','mode'],['colorUnits','normalized']])$(id).onchange=()=>{color()[key]=key==='normalized'?$(id).value==='normalized':$(id).value;send({action:'color',tool:options.tool||'line',color:{...color()}});renderColor();};
 function paintWheel(){
  const o=color(),canvas=$('colorWheel'),ctx=canvas.getContext('2d'),w=canvas.width,r=w/2,data=ctx.createImageData(w,w),rgb=Visual.hsv(o.hue,o.saturation,o.brightness);
- for(let y=0;y<w;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(o.mode==='rgb')data.data.set([x/(w-1)*255,(1-y/(w-1))*255,rgb[2],255],i);else{const dx=(x-r)/r,dy=(r-y)/r,s=Math.hypot(dx,dy);if(s<=1)data.data.set([...Visual.hsv((Math.atan2(dy,dx)*180/Math.PI+360)%360,s,o.brightness),255],i);}}
+ for(let y=0;y<w;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(o.mode==='rgb')data.data.set([x/(w-1)*255,(1-y/(w-1))*255,rgb[2],255],i);else{const dx=(x-r)/r,dy=(r-y)/r,s=Math.hypot(dx,dy);const coverage=C.clamp((1-s)*r/config.drawing.colorWheelEdgePixels+.5,0,1);if(coverage)data.data.set([...Visual.hsv((Math.atan2(dy,dx)*180/Math.PI+360)%360,Math.min(1,s),o.brightness),Math.round(255*coverage)],i);}}
  ctx.putImageData(data,0,0);let x,y;if(o.mode==='rgb'){x=rgb[0]/255*(w-1);y=(1-rgb[1]/255)*(w-1);}else{const a=o.hue*Math.PI/180;x=r+Math.cos(a)*r*o.saturation;y=r-Math.sin(a)*r*o.saturation;}
  ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.strokeStyle='#111';ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
 }

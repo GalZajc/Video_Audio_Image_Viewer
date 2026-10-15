@@ -1,3 +1,13 @@
+# Enajsti pregled — 15. 10. 2026
+
+- Galerija prebere tudi slike iz zgodovine odložišča Windows in jih združi s trenutno sliko brez podvojitev. Obstoječega odložišča in zgodovine ne spreminja. Preverjeno s tremi razpoložljivimi slikami.
+- Predogled se prilagodi obnovljeni velikosti izvlečenega okna še pred izpustom miške.
+- Povečane piksle v predogledu riše brez glajenja; preverjenih 80 enotnih blokov 8 × 8 pikslov.
+- Enak odtenek vseh delov obrobe razširjenih orodij in antialiasing roba barvnega kroga.
+- Usklajena in zasukana kazalca za premik besedila ter tipkanje; enako zasukani kazalci na besedah OCR.
+
+Tri uporabnikove ocene so namenjene ponovnemu pregledu. Druge kljukice, opombe in slike so ohranjene.
+
 # Deseti pregled — 15. 10. 2026
 
 - Predogled med vlečenjem uporablja nastavitve in merilo držanega zavihka; spreminjanje velikosti okna ga takoj osveži.
