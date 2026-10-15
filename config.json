@@ -287,6 +287,18 @@
     "ocrMaxInputBytes": 67108864,
     "ocrDimOpacity": 0.58,
     "ocrBackground": "#080808",
+    "ocrEngine": {
+      "directory": "",
+      "cpuThreads": 4,
+      "maximumLines": 1000,
+      "maximumDimension": 10000,
+      "maximumPixels": 32000000,
+      "startupTimeoutMs": 15000,
+      "requestTimeoutMs": 20000,
+      "idleTimeoutMs": 300000,
+      "cacheEntries": 8,
+      "allowLegacyFallback": true
+    },
     "ocrOrientation": {
       "analysisMaximumDimension": 2048,
       "analysisRadius": 7,

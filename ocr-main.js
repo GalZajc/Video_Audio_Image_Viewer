@@ -1,19 +1,22 @@
 'use strict';
-const fs=require('node:fs'),path=require('node:path'),{execFile}=require('node:child_process'),{promisify}=require('node:util'),{Worker}=require('node:worker_threads'),{nativeImage}=require('electron'),Layout=require('./ocr-layout');const exec=promisify(execFile);
-async function analyze(image,options){const size=image.getSize(),f=Math.min(1,options.analysisMaximumDimension/Math.max(size.width,size.height)),width=Math.max(1,Math.round(size.width*f)),height=Math.max(1,Math.round(size.height*f)),pixels=image.resize({width,height}).toBitmap();const result=await new Promise((resolve,reject)=>{const worker=new Worker(path.join(__dirname,'ocr-orientation-worker.js'),{workerData:{pixels,width,height,options}});worker.once('message',resolve);worker.once('error',reject);worker.once('exit',code=>{if(code)reject(Error('Orientation worker exited '+code));});});return {...result,candidates:result.candidates.map(p=>({...p,fontSize:p.fontSize/f,region:{xmin:Math.floor(p.region.xmin*size.width/width),ymin:Math.floor(p.region.ymin*size.height/height),xmax:Math.min(size.width,Math.ceil(p.region.xmax*size.width/width)),ymax:Math.min(size.height,Math.ceil(p.region.ymax*size.height/height))}}))};}
-async function recognize(input,directory,Media,defaults,progress=()=>{}){
- const started=Date.now(),options=defaults.extras.ocrOrientation,image=nativeImage.createFromPath(input),source=image.getSize();if(image.isEmpty())throw Error('Unable to decode OCR image');
- const analysis=await analyze(image,options),passes=[{path:input,angle:0,scaledWidth:source.width,scaledHeight:source.height}],candidates=analysis.candidates,groups=[];let cursor=0,done=0;
- progress({phase:'regions',completed:0,total:candidates.length});
- async function prepare(){while(cursor<candidates.length){const i=cursor++,candidate=candidates[i],r=candidate.region,width=r.xmax-r.xmin,height=r.ymax-r.ymin,f=Math.min(options.passMaximumDimension/Math.max(width,height),Math.max(1,options.minimumPassTextHeight/candidate.fontSize)),sw=Math.max(1,Math.round(width*f)),sh=Math.max(1,Math.round(height*f)),angle=-candidate.angle,a=angle*Math.PI/180,w=Math.ceil(Math.abs(sw*Math.cos(a))+Math.abs(sh*Math.sin(a))),h=Math.ceil(Math.abs(sw*Math.sin(a))+Math.abs(sh*Math.cos(a))),crop=path.join(directory,'region-'+i+'.png'),first=path.join(directory,'angle-'+i+'a.png'),second=path.join(directory,'angle-'+i+'b.png');
- await fs.promises.writeFile(crop,image.crop({x:r.xmin,y:r.ymin,width,height}).resize({width:sw,height:sh}).toPNG());
- await Media.run('ffmpeg',['-v','error','-y','-i',crop,'-filter_complex_threads','1','-filter_complex',`[0:v]split[a][b];[a]rotate=${a}:ow=${w}:oh=${h}:c=black[p];[b]rotate=${a+Math.PI}:ow=${w}:oh=${h}:c=black[q]`,'-map','[p]','-frames:v','1','-threads','1',first,'-map','[q]','-frames:v','1','-threads','1',second]);
- groups[i]=[{path:first,angle,region:r,scaledWidth:sw,scaledHeight:sh},{path:second,angle:angle+180,region:r,scaledWidth:sw,scaledHeight:sh}];progress({phase:'regions',completed:++done,total:candidates.length});
- }}
- await Promise.all([prepare(),prepare()]);for(const group of groups)passes.push(...group);const list=path.join(directory,'passes.json');await fs.promises.writeFile(list,JSON.stringify(passes.map(p=>p.path)),'utf8');progress({phase:'recognition',completed:0,total:passes.length});
- const {stdout}=await exec('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'ocr-batch.ps1'),'-InputList',list],{windowsHide:true,encoding:'utf8',timeout:defaults.extras.ocrTimeoutMs,maxBuffer:defaults.extras.ocrMaxInputBytes}),results=JSON.parse(stdout.trim().replace(/^\uFEFF/,'')).results,selected=[];
- const quality=require('./ocr-regions').quality;for(let i=1;i<results.length;i+=2){const best=quality(results[i])>=quality(results[i+1])?i:i+1;if(results[best].text.replace(/[^\p{L}\p{N}]/gu,'').length>=options.minimumPassCharacters)selected.push(best);}selected.sort((a,b)=>results[a].lines.length-results[b].lines.length||quality(results[b])-quality(results[a]));selected.push(0);
- const result=Layout.merge(selected.map(i=>results[i]),selected.map(i=>passes[i]),source,options);result.analysis={candidates,passes:passes.map(({path,...p})=>p),passText:results.map(p=>p.text),selected,milliseconds:Date.now()-started};progress({phase:'complete',completed:passes.length,total:passes.length});return result;
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{execFile}=require('node:child_process'),{promisify}=require('node:util'),Native=require('./ocr-native');
+const exec=promisify(execFile),cache=new Map(),inflight=new Map();let stopping=false;
+async function legacy(input,defaults,reason){
+ const {stdout}=await exec('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'ocr-windows.ps1'),'-InputFile',input],{windowsHide:true,encoding:'utf8',timeout:defaults.extras.ocrEngine.requestTimeoutMs,maxBuffer:defaults.extras.ocrMaxInputBytes});
+ const result=JSON.parse(stdout.trim().replace(/^\uFEFF/,''));
+ for(const line of result.lines)for(const w of line.words)w.polygon=[{x:w.x,y:w.y},{x:w.x+w.width,y:w.y},{x:w.x+w.width,y:w.y+w.height},{x:w.x,y:w.y+w.height}];
+ return {...result,engine:'windows-legacy',analysis:{passes:1,fallbackReason:reason}};
 }
-
-module.exports={recognize,analyze};
+async function recognize(input,directory,Media,defaults,progress=()=>{}){
+ if(stopping)throw Error('OCR is shutting down');
+ const started=Date.now(),options=defaults.extras.ocrEngine,bytes=await fs.promises.readFile(input),key=crypto.createHash('sha256').update(bytes).update(JSON.stringify(options)).digest('hex');
+ progress({phase:'recognition',completed:0,total:1});
+ if(cache.has(key)){const result=cache.get(key);cache.delete(key);cache.set(key,result);progress({phase:'complete',completed:1,total:1});return {...result,analysis:{...result.analysis,cached:true,milliseconds:Date.now()-started}};}
+ if(!inflight.has(key))inflight.set(key,(async()=>{
+  let result;try{result=await Native.recognize(input,{...options,cacheDirectory:path.join(Media.cache,'oneocr-runtime')});}catch(error){if(stopping||!options.allowLegacyFallback)throw error;result=await legacy(input,defaults,error.message);}
+  result.analysis={...result.analysis,recognitionMs:result.analysis.milliseconds,cached:false,milliseconds:Date.now()-started};cache.set(key,result);while(cache.size>options.cacheEntries)cache.delete(cache.keys().next().value);return result;
+ })().finally(()=>inflight.delete(key)));
+ const result=await inflight.get(key);progress({phase:'complete',completed:1,total:1});return result;
+}
+function shutdown(){stopping=true;Native.stop();cache.clear();}
+module.exports={recognize,shutdown};

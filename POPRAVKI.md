@@ -1,3 +1,14 @@
+# Štirinajsti pregled — 15. 10. 2026
+
+- OCR je zamenjan z OneOCR iz nameščenega Snipping Toola: izvirna slika, en prehod, izvorni štirikotniki besed, brez združevanja 97 zasukanih prepoznav.
+- Skrit ločen proces ponovno uporablja model, predpomnilnik osmih slik odpravi ponovno računanje. Po petih minutah mirovanja se proces zapre; napake ostanejo omejene na ta proces.
+- Izris prepoznanih besed uporabi skupen izrez in enkrat obnovi sliko; nespremenjenega sloja ne gradi ponovno. Izbor besedila in nedokončane risbe ostanejo ločeni.
+- Na uporabnikovem screenshotu Wikipedije: prej 20,9 s; samo OneOCR približno 1,8–2,7 s. V ročno prepisanem delu 1.618 znakov je število napačnih znakov padlo z 214 na 4. To ni obljuba popolne natančnosti na poljubnih slikah.
+- Preverjeni običajni angleški/slovenski odstavki, šumniki, številke, modre povezave, prazna slika, 20 zasukov, besedilno kopiranje ter nespremenjeni obrez/rotacija/povečava/nedokončano besedilo.
+- Microsoftove knjižnice in model ostanejo samo v zasebnem DATA; UTF-8 manifest ohrani poti s čšž. Če Snipping Tool ni na voljo, ostane hiter enoprehodni Windowsov združljivostni pogon.
+
+Zahteva OCR je namenjena ponovnemu uporabnikovemu pregledu; drugih ocen ne spreminjamo.
+
 # Trinajsti pregled — 15. 10. 2026
 
 - Ctrl+O zavzame celotno Electron okno. Drsnika galerije in odložišča sta široka 6 px; odložišče ima stalen stolpec z enako velikimi sličicami kot posnetki zaslona.

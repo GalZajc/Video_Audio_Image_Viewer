@@ -5,3 +5,5 @@ The application bundles Electron (MIT and Chromium third-party licenses are incl
 Original source: https://github.com/FFmpeg/FFmpeg/blob/master/libavfilter/vf_rotate.c
 
 License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+The OneOCR bridge uses ABI information documented by b1tg (https://github.com/b1tg/win11-oneocr) and AuroraWright/oneocr (https://github.com/AuroraWright/oneocr, MIT). The C# worker and Electron integration are implemented in this project. Microsoft OneOCR DLLs and model files are obtained solely from the user's installed Microsoft Snipping Tool and cached privately in DATA; they are not redistributed in the public application archive.

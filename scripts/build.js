@@ -5,6 +5,7 @@ const {execFileSync}=require('node:child_process');
 (async()=>{
   const root=path.resolve(__dirname,'..');
   if(process.platform==='win32'){
+    execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'build-ocr-worker.ps1')],{windowsHide:true});
     fs.mkdirSync(path.join(root,'bin'),{recursive:true});
     for(const name of ['ffmpeg','ffprobe']){
       const target=path.join(root,'bin',name+'.exe');
