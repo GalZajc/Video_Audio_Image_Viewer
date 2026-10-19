@@ -12,6 +12,7 @@ function ok(s){checks.push(s);console.log('PASS '+s);}
 app.whenReady().then(async()=>{try{
  while(!(win=Main.getWindow()))await pause(20);await wait('!!config && !!drawingOptions');
  assert.equal(await js('settings.maxOpenFiles'),20);await js('openSettings()');assert.equal(await js('$("maxOpenFiles").value'),'20');await js('$("settings").close()');ok('Existing settings receive default 20; setting is shown in the real UI');
+ win.hide();Main.routeFiles([]);assert.equal(win.isVisible(),true);win.hide();assert.equal(dialogs.length,0);ok('Launching the app without files reveals the existing window without a dialog');
  const image=nativeImage.createFromBitmap(Buffer.alloc(16*16*4,255),{width:16,height:16}).toPNG();
  const files=Array.from({length:21},(_,i)=>{const file=path.join(out,`slika čšž ${i}.png`);fs.writeFileSync(file,image);return file;});
  await js(`openFiles(${JSON.stringify(files.slice(0,2))})`);assert.equal(described,0);assert.equal(await js('tabs.length'),0);assert.equal(dialogs.at(-1).defaultId,1);ok('Canceled bulk opening does not probe any files or change tabs');

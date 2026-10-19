@@ -33,7 +33,6 @@ function scheduleFileOpen(ctx){
   },defaults.fileOpening.batchDelayMs);
 }
 function routeFiles(files){
-  if(!files.length)return;
   const target=win&&!win.isDestroyed()?win:liveWindows()[0]?.window;
   if(!target){pending.push(...files);return;}
   const ctx=windowContexts.get(target.webContents.id);ctx.pending.push(...files);scheduleFileOpen(ctx);
