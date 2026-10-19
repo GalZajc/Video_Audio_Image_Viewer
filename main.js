@@ -14,7 +14,7 @@ app.setPath('sessionData',path.join(data,'electron','session'));
 protocol.registerSchemesAsPrivileged([{scheme:'media',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true,corsEnabled:true}}]);
 let win,ready=false,exporting=false,pending=[],state={tabs:[],active:0,closed:[],history:[]},settings;
 const {openFileLimit,createFileOpenGuard}=require('./file-open-safety');
-const authorizeFiles=createFileOpenGuard({getSettings:()=>settings,showMessageBox:(owner,options)=>dialog.showMessageBox(owner,options),defaultLimit:defaults.preferences.maxOpenFiles});
+const authorizeFiles=createFileOpenGuard({getSettings:()=>settings,showMessageBox:require('./file-open-dialog-main')(ipcMain),defaultLimit:defaults.preferences.maxOpenFiles});
 let writeQueue=Promise.resolve();
 const windowContexts=new Map(),releaseRequests=new Set();let quitting=false,quitContexts=[],quitActive=null,quitFlushed=false;
 const toolWindows=require('./tool-windows-main')({ipcMain,screen,defaults,contextFor,data,getSettings:()=>settings,getHeldDrawing:()=>tabWindows?.getHeldDrawing()});

@@ -10,7 +10,18 @@ function renderRaster(){
   if(pixelRaster.gl&&(r.bw>pixelRaster.gl.getParameter(pixelRaster.gl.MAX_TEXTURE_SIZE)||r.bh>pixelRaster.gl.getParameter(pixelRaster.gl.MAX_TEXTURE_SIZE))){const replacement=canvas.cloneNode();canvas.replaceWith(replacement);pixelRaster.gl.getExtension('WEBGL_lose_context')?.loseContext();canvas=replacement;pixelRaster=new CpuPixelRaster(canvas);}
   pixelRaster.draw(source,$('drawingLayer'),r,tab.state,settings.backgroundColor||'#000000ff',tab.state.drawingsVisible!==false);canvas.style.display='block';
 }
-function choose(title,detail,labels){return new Promise(resolve=>{const dialog=$('choiceDialog');$('choiceTitle').textContent=title;$('choiceDetail').textContent=detail;$('choiceButtons').replaceChildren();labels.forEach((label,i)=>{const button=document.createElement('button');button.value=String(i);button.textContent=label;$('choiceButtons').append(button);});dialog.returnValue='cancel';dialog.addEventListener('close',()=>resolve(dialog.returnValue),{once:true});dialog.showModal();$('choiceButtons').firstElementChild.focus();});}
+let choiceQueue=Promise.resolve();
+function choose(title,detail,labels,defaultIndex=0){
+  const task=choiceQueue.then(()=>new Promise(resolve=>{
+    const dialog=$('choiceDialog');$('choiceTitle').textContent=title;$('choiceDetail').textContent=detail;$('choiceButtons').replaceChildren();
+    labels.forEach((label,i)=>{const button=document.createElement('button');button.value=String(i);button.textContent=label;$('choiceButtons').append(button);});
+    dialog.returnValue='cancel';dialog.addEventListener('close',()=>resolve(dialog.returnValue),{once:true});dialog.showModal();$('choiceButtons').children[defaultIndex]?.focus();
+  }));choiceQueue=task.catch(()=>{});return task;
+}
+window.player.onFileOpenDialog(async({id,options})=>{
+  const selected=await choose(options.message,options.detail||'',options.buttons,options.defaultId);
+  window.player.fileOpenDialogResult({id,response:selected==='cancel'?options.cancelId:Number(selected)});
+});
 function effectiveExportKind(tab){return tab.meta.isImage||!tab.meta.isAudio&&tab.state.in&&tab.state.out&&tab.state.in.index===tab.state.out.index?'image':tab.meta.kind;}
 function initExportExtras(tab){
   if(!$('exportOpen')){const parent=document.querySelector('.exportSettings'),open=document.createElement('label');open.innerHTML='<input id="exportOpen" type="checkbox"><span data-sl="Po izvozu odpri izrezek" data-en="Open exported file"></span>';parent.append(open);const content=document.createElement('div');content.id='contentChoices';content.innerHTML='<select id="exportContent" hidden><option value="video">video</option><option value="videoOnly">videoOnly</option><option value="audio">audio</option><option value="audioBlack">audioBlack</option></select><label><input name="content" type="radio" value="video" checked><span data-sl="Video" data-en="Video"></span></label><label><input name="content" type="radio" value="audio"><span data-sl="Zvok brez videa" data-en="Audio without video"></span></label><label><input name="content" type="radio" value="videoOnly"><span data-sl="Video brez zvoka" data-en="Video without audio"></span></label>';parent.append(content);

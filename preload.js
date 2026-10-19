@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('player',{
   filePath:file=>webUtils.getPathForFile(file),
   onTransferredTab:callback=>ipcRenderer.on('receive-tab',(_event,value)=>callback(value)),
   onSettings:callback=>ipcRenderer.on('settings-changed',(_event,value)=>callback(value)),
+  onFileOpenDialog:callback=>ipcRenderer.on('file-open-dialog',(_event,request)=>callback(request)),fileOpenDialogResult:value=>ipcRenderer.send('file-open-dialog-result',value),
   onFiles:callback=>ipcRenderer.on('open-files',(_event,files)=>callback(files)),
   onOcrProgress:callback=>ipcRenderer.on('ocr-progress',(_event,event)=>callback(event)),onProgress:callback=>ipcRenderer.on('progress',(_event,event)=>callback(event)),
   onMaximized:callback=>ipcRenderer.on('maximized',(_event,value)=>callback(value)),
