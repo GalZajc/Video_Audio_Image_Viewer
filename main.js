@@ -13,6 +13,8 @@ app.setPath('userData',path.join(data,'electron'));
 app.setPath('sessionData',path.join(data,'electron','session'));
 protocol.registerSchemesAsPrivileged([{scheme:'media',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true,corsEnabled:true}}]);
 let win,ready=false,exporting=false,pending=[],state={tabs:[],active:0,closed:[],history:[]},settings;
+const {openFileLimit,createFileOpenGuard}=require('./file-open-safety');
+const authorizeFiles=createFileOpenGuard({getSettings:()=>settings,showMessageBox:(owner,options)=>dialog.showMessageBox(owner,options),defaultLimit:defaults.preferences.maxOpenFiles});
 let writeQueue=Promise.resolve();
 const windowContexts=new Map(),releaseRequests=new Set();let quitting=false,quitContexts=[],quitActive=null,quitFlushed=false;
 const toolWindows=require('./tool-windows-main')({ipcMain,screen,defaults,contextFor,data,getSettings:()=>settings,getHeldDrawing:()=>tabWindows?.getHeldDrawing()});
@@ -22,7 +24,21 @@ function setFullscreen(value,target=win){
 function contextFor(event){const ctx=windowContexts.get(event.sender.id);if(!ctx)throw new Error('Okno ni več odprto.');return ctx;}
 function liveWindows(){return [...windowContexts.values()].filter(c=>!c.window.isDestroyed()&&!c.temporary);}
 function saveWindows(fallback){const contexts=quitting?quitContexts:liveWindows(),selected=contexts.find(c=>c.window===(quitting?quitActive:win))||contexts[0]||fallback;const list=contexts.length?contexts:fallback?[fallback]:[];state={...(selected?.state||{tabs:[],active:0,closed:[],history:[]}),windows:list.map(c=>({...c.state,bounds:c.window.isDestroyed()?c.bounds:c.window.getBounds(),normalBounds:c.window.isDestroyed()?c.normalBounds:c.window.getNormalBounds(),maximized:c.window.isDestroyed()?c.maximized:c.window.isMaximized(),fullscreen:c.window.isDestroyed()?c.fullscreen:c.window.isFullScreen()})),activeWindow:Math.max(0,list.indexOf(selected))};return persist('history.json',state);}
-function routeFiles(files){const target=win&&!win.isDestroyed()?win:liveWindows()[0]?.window;if(!target){pending.push(...files);return;}const ctx=windowContexts.get(target.webContents.id);if(ctx.ready)target.webContents.send('open-files',files);else ctx.pending.push(...files);if(target.isMinimized())target.restore();target.show();target.focus();}
+function scheduleFileOpen(ctx){
+  clearTimeout(ctx.openFilesTimer);
+  if(!ctx.ready||!ctx.pending.length)return;
+  ctx.openFilesTimer=setTimeout(()=>{
+    if(ctx.window.isDestroyed()){const files=ctx.pending;ctx.pending=[];routeFiles(files);return;}
+    const files=ctx.pending;ctx.pending=[];ctx.window.webContents.send('open-files',files);
+  },defaults.fileOpening.batchDelayMs);
+}
+function routeFiles(files){
+  if(!files.length)return;
+  const target=win&&!win.isDestroyed()?win:liveWindows()[0]?.window;
+  if(!target){pending.push(...files);return;}
+  const ctx=windowContexts.get(target.webContents.id);ctx.pending.push(...files);scheduleFileOpen(ctx);
+  if(target.isMinimized())target.restore();target.show();target.focus();
+}
 function sweepReleases(){const used=new Set(liveWindows().flatMap(c=>c.state.tabs||[]).map(t=>t.path));for(const id of releaseRequests){const meta=Media.mediaById.get(id);if(meta&&!used.has(meta.path)&&!exporting){Media.release(id);releaseRequests.delete(id);}}}
 function createWindow(saved={tabs:[],active:0,closed:[],history:[]},bounds=null,options={}){
   const initialBounds=(saved.maximized||saved.fullscreen)&&saved.normalBounds?saved.normalBounds:bounds;
@@ -47,6 +63,7 @@ else{
     await fs.promises.mkdir(data,{recursive:true});await fs.promises.mkdir(path.join(data,'electron','session'),{recursive:true});await fs.promises.mkdir(path.join(root,'OUTPUT'),{recursive:true});
     const savedSettings=load('settings.json',{});
     settings={...defaults.export,...defaults.preferences,...savedSettings,shortcuts:{...defaults.shortcuts,...savedSettings.shortcuts}};
+    settings.maxOpenFiles=openFileLimit(settings.maxOpenFiles,defaults.preferences.maxOpenFiles);
     if((savedSettings.schemaVersion||0)<4){
       if(settings.shortcuts.export==='Ctrl+KeyM')settings.shortcuts.export='Ctrl+KeyS';
       if(settings.shortcuts.faster==='Shift+KeyD')settings.shortcuts.faster='KeyD';
@@ -79,13 +96,14 @@ else{
     const restoreActive=state.activeWindow||0;const savedWindows=Array.isArray(state.windows)&&state.windows.length?state.windows:[state];
     for(const saved of savedWindows){const created=createWindow(saved,saved.bounds||null);await windowContexts.get(created.webContents.id).loaded;}
     win=liveWindows()[Math.min(restoreActive,liveWindows().length-1)].window;
-    if(pending.length){const ctx=windowContexts.get(win.webContents.id);if(ctx.ready)win.webContents.send('open-files',pending);else ctx.pending.push(...pending);pending=[];}
+    if(pending.length){const files=pending;pending=[];routeFiles(files);}
   }).catch(error=>{dialog.showErrorBox('Video Audio Image Viewer',error.message);app.quit();});
 }
 function metaFor(id){const meta=Media.mediaById.get(id);if(!meta)throw new Error('Posnetek ni več odprt.');return meta;}
 function notify(id,event){for(const ctx of liveWindows())ctx.window.webContents.send('progress',{id,...event});}
-ipcMain.handle('init',event=>{const ctx=contextFor(event);ctx.ready=true;const files=ctx.pending;ctx.pending=[];return {config:defaults,settings,state:ctx.state,files,windowId:ctx.window.id,dragPresentation:ctx.dragPresentation};});
+ipcMain.handle('init',event=>{const ctx=contextFor(event);ctx.ready=true;scheduleFileOpen(ctx);const files=[];return {config:defaults,settings,state:ctx.state,files,windowId:ctx.window.id,dragPresentation:ctx.dragPresentation};});
 ipcMain.handle('pick-files',async event=>{const win=contextFor(event).window;const result=await dialog.showOpenDialog(win,{title:settings.language==='en'?'Open media':'Odpri video, zvok ali sliko',properties:['openFile','multiSelections'],filters:[{name:'Video / Audio / Images',extensions:Object.values(defaults.mediaTypes).flat()},{name:'All files',extensions:['*']}]});return result.canceled?[]:result.filePaths;});
+ipcMain.handle('authorize-files',(event,files)=>authorizeFiles(contextFor(event).window,files));
 ipcMain.handle('describe',(_event,file)=>Media.describe(file));
 ipcMain.handle('frame',(_event,{id,time,direction})=>Media.getFrame(metaFor(id),Number(time),Number(direction)||0,event=>notify(id,event)));
 ipcMain.handle('prepare-image',async(_event,id)=>{
@@ -114,6 +132,7 @@ ipcMain.handle('settings',async(_event,value)=>{
   if(['name','modified','created','size'].includes(value.folderSort))settings.folderSort=value.folderSort;
   for(const key of ['folderDescending','matchSource','openAfterExport','escapeMaxFit','timelinePreviewFitAspect','linkDrawingTools','showRemovedClipboardImages'])if(typeof value[key]==='boolean')settings[key]=value[key];
   if(typeof value.backgroundColor==='string'&&/^#[0-9a-f]{8}$/i.test(value.backgroundColor))settings.backgroundColor=value.backgroundColor;
+  if(Object.hasOwn(value,'maxOpenFiles'))settings.maxOpenFiles=openFileLimit(value.maxOpenFiles,defaults.preferences.maxOpenFiles);
   if(value.shortcuts){const next={};for(const key of Object.keys(defaults.shortcuts)){const binding=value.shortcuts[key];if(typeof binding!=='string'||!/^(?:(?:Ctrl|Alt|Shift|Meta|Escape)\+)*(?:Key[A-Z]|Digit[0-9]|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Space|Comma|Period|Tab|Escape|Backspace|Delete|Enter|Home|End|PageUp|PageDown|BracketLeft|BracketRight|Minus|Equal|Slash|Semicolon|Quote|Backquote|F(?:[1-9]|1[0-2]))$/.test(binding))throw new Error('Neveljavna bližnjica.');next[key]=binding;}if(new Set(Object.values(next)).size!==Object.keys(next).length)throw new Error('Bližnjice se ne smejo ponavljati.');settings.shortcuts=next;}
   if(value.drawingCustomization&&typeof value.drawingCustomization==='object'&&JSON.stringify(value.drawingCustomization).length<65536)settings.drawingCustomization=JSON.parse(JSON.stringify(value.drawingCustomization));
   if(Number.isFinite(value.tabDetachDistance))settings.tabDetachDistance=Math.max(0,Math.min(1000,Math.round(value.tabDetachDistance)));

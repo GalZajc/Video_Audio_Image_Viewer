@@ -193,7 +193,8 @@
     "timelinePreviewHeight": 144,
     "timelinePreviewFitAspect": true,
     "tabDetachDistance": 28,
-    "showRemovedClipboardImages": false
+    "showRemovedClipboardImages": false,
+    "maxOpenFiles": 20
   },
   "associations": {
     "excluded": [
@@ -330,5 +331,8 @@
     "copyFlashColor": "#87d8ff",
     "copyFlashOpacity": 0.2,
     "screenshotIndexCacheMs": 800
+  },
+  "fileOpening": {
+    "batchDelayMs": 600
   }
 }

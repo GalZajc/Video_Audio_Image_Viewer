@@ -4,6 +4,9 @@ A portable, keyboard-driven Electron viewer for video, audio and images, with co
 
 [Download the Windows x64 release](https://github.com/GalZajc/Video_Audio_Image_Viewer/releases) · [Slovenian documentation](README.sl.md)
 
+
+Opening multiple files requires confirmation (Cancel is selected by default). Settings → Maximum files per opening sets a strict per-group limit, initially 20; an oversized group is rejected entirely. Closely spaced Explorer launches are grouped into one request. Restoring the saved session does not ask again.
+
 ## Run the portable application
 
 Extract the **entire** release ZIP into a writable folder, then double-click **Video Audio Image Viewer.vbs**. It creates a shortcut with the application icon in the same folder. You can copy the shortcut to your desktop or pin it to Start. Electron, FFmpeg and FFprobe are included; a separate Node.js or FFmpeg installation is unnecessary.

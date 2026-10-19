@@ -82,18 +82,19 @@ async function finishTabDrag(event){
 }
 document.addEventListener('pointerup',finishTabDrag);document.addEventListener('pointercancel',finishTabDrag);window.addEventListener('blur',()=>{if(!tabDrag?.outside)finishTabDrag();});
 function capture(){const tab=current();if(!tab)return;if(loaded&&!tab.meta.isImage){tab.state.time=seekTarget??video.currentTime;tab.state.playing=!video.paused;tab.state.rate=video.playbackRate;tab.state.volume=video.volume;tab.state.muted=video.muted;}}
-function openFiles(files,saved=null){
+function openFiles(files,saved=null,restoreSession=false){
   const task=openingQueue.then(async()=>{
+    if(!restoreSession){files=await window.player.authorizeFiles(files);if(!files.length)return;}
     for(let i=0;i<files.length;i++){
       try{
         const meta=await window.player.describe(files[i]);
         const existing=tabs.findIndex(tab=>tab.meta.path.toLowerCase()===meta.path.toLowerCase());
-        if(existing>=0&&!restoring){if(!restoring)activate(existing);continue;}
+        if(existing>=0&&!restoreSession){if(!restoreSession)activate(existing);continue;}
         const previous=saved?.[i];const state=previous&&previous.size===meta.size&&previous.mtime===meta.mtime?{...fresh(),...previous,view:{...fresh().view,...previous.view}}:fresh();
         delete state.path;delete state.size;delete state.mtime;delete state.folderStates;if(previous?.crop&&!previous.cropSpace)state.cropSpace='source';
-        if(restoring||meta.isImage)state.playing=false;else if(!previous)state.playing=true;
+        if(restoreSession||meta.isImage)state.playing=false;else if(!previous)state.playing=true;
         const tab={meta,state,proxyUrl:null,preparing:false,...(previous?.folderStates?{folderStates:new Map(previous.folderStates)}:{})};tabs.push(tab);
-        if(!restoring){history.push({path:meta.path,opened:new Date().toISOString()});history=history.slice(-config.storage.historyEntries);activate(tabs.length-1);}
+        if(!restoreSession){history.push({path:meta.path,opened:new Date().toISOString()});history=history.slice(-config.storage.historyEntries);activate(tabs.length-1);}
       }catch(error){showError(error);}
     }
     renderTabs();persistSoon();
@@ -328,7 +329,7 @@ document.addEventListener('drop',event=>{event.preventDefault();const files=[...
 window.addEventListener('beforeunload',()=>{capture();persistSoon(true);});
 setInterval(()=>{capture();persistSoon();},5000);
 window.addEventListener('DOMContentLoaded',()=>{(async()=>{const initial=await window.player.init();config=initial.config;settings=initial.settings;tabWindowPresentation=initial.dragPresentation;initViewer();closed=initial.state.closed||[];history=initial.state.history||[];
-  restoring=true;await openFiles((initial.state.tabs||[]).map(t=>t.path),initial.state.tabs||[]);restoring=false;
+  restoring=true;await openFiles((initial.state.tabs||[]).map(t=>t.path),initial.state.tabs||[],true);restoring=false;
   if(tabs.length)activate(C.clamp(initial.state.active||0,0,tabs.length-1));else renderTabs();
   if(initial.files.length)await openFiles(initial.files);controls();
 })().catch(showError);});

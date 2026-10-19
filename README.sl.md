@@ -10,6 +10,9 @@ Prenosljiv Electron pregledovalnik videa, zvoka in slik. Pripravljeno različico
 
 Za sistematičen pregled funkcij odpri **Review features.vbs**. Lokalna spletna stran omogoča ✓/✕, modro ○ za »nisem preveril, verjetno deluje«, opombe, slike PNG/JPEG/WebP pri vsaki vrstici (največ 12 MB na sliko), dodatne zahteve ter kopiranje ali shranjevanje naslednjega prompta. Modre oznake se štejejo ločeno od preverjenih uspehov; prompt vsebuje tudi projektne poti priloženih slik. Ocene se samodejno shranjujejo v `DATA/review.json`, sestavljen prompt pa v `DATA/review-next-prompt.md`. Ko končaš, lahko v Codexu samo napišeš »Pregled je končan«. Stran uporablja priloženi Electron kot lokalni Node runtime in posluša samo na `127.0.0.1`; ločena namestitev ni potrebna.
 
+
+Odpiranje več datotek zahteva potrditev; privzeto je izbran Prekliči. V nastavitvah je stroga meja »Največ datotek pri enem odpiranju«, privzeto 20. Prevelika skupina se v celoti zavrne. Zaporedni zagoni iz Explorerja se združijo v eno zahtevo. Obnova shranjene seje ne sprašuje ponovno.
+
 ## Bližnjice
 
 | Bližnjica | Dejanje |
