@@ -1,0 +1,45 @@
+'use strict';
+const {app,nativeImage,shell}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const project=path.resolve(__dirname,'..'),bundle=process.env.VAP_BUNDLE||project,out=path.join(project,'OUTPUT','live_folder_'+new Date().toISOString().replace(/[:.]/g,'-'));
+const dir=path.join(out,'mapa čšž'),moved=path.join(out,'prestavljeno');fs.mkdirSync(dir,{recursive:true});fs.mkdirSync(moved);
+process.env.VAP_ROOT=out;process.env.VAP_TEST_MODE='1';app.setPath('userData',path.join(out,'electron'));
+const Main=require(path.join(bundle,'main')),Media=require(path.join(bundle,'media')),pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const checks=[],errors=[];let win;const js=source=>win.webContents.executeJavaScript(source.includes('await ')?'(async()=>{'+source+'})()':source);
+async function wait(expression){for(let i=0;i<500;i++){if(await js(expression))return;await pause(20);}throw Error('Timeout '+expression);}
+function ok(text){checks.push(text);console.log('PASS '+text);}
+app.whenReady().then(async()=>{try{
+ while(!(win=Main.getWindow()))await pause(20);await wait('!!config && !!drawingOptions');
+ win.webContents.on('console-message',event=>{if(event.level==='error')errors.push(event.message);});
+ const png=nativeImage.createFromBitmap(Buffer.alloc(24*24*4,255),{width:24,height:24}).toPNG();
+ const a=path.join(dir,'01 čšž.png'),b=path.join(dir,'02.png'),c=path.join(dir,'03.png'),d=path.join(dir,'04.png'),e=path.join(dir,'05.png');
+ for(const file of [a,b,c])fs.writeFileSync(file,png);
+ await js(`openFiles([${JSON.stringify(a)}])`);await wait('loaded');await js('current().state.rotation=37;await navigateFolder(1)');assert.equal(await js('current().meta.path'),b);
+ await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),c);
+ fs.unlinkSync(b);fs.renameSync(c,path.join(moved,'03.png'));
+ await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),a);assert.equal(await js('current().state.rotation'),37);
+ assert.deepEqual(await js('[...current().folderStates.keys()]'),[a]);ok('Deleted and moved images are skipped; surviving image edits remain and missing cached states are pruned');
+ fs.writeFileSync(d,png);fs.writeFileSync(e,png);await js('navigateFolder(-1)');assert.equal(await js('current().meta.path'),e);await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),a);ok('New files are discovered immediately and both directions wrap around the live list');
+ await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),d);fs.unlinkSync(d);
+ await js('navigateFolder(-1)');assert.equal(await js('current().meta.path'),e);ok('Backward navigation from a deleted current file chooses the last existing file');
+ fs.renameSync(e,path.join(moved,'05.png'));const id=await js('current().meta.id');Media.release(id);
+ await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),a);ok('A missing current file and expired media handle cannot block directory navigation');
+ fs.writeFileSync(b,png);fs.writeFileSync(c,png);
+ const originalDescribe=Media.describe;let raced=false;Media.describe=async file=>{if(file===b&&!raced){raced=true;fs.unlinkSync(b);}return originalDescribe(file);};
+ await js('navigateFolder(1)');Media.describe=originalDescribe;assert.equal(await js('current().meta.path'),c);assert.equal(raced,true);assert.equal(await js('navigating'),false);ok('A file deleted between directory listing and opening is skipped within the same shortcut press');
+ const audio=path.join(dir,'06.wav'),video=path.join(dir,'07.mp4');
+ await Media.run('ffmpeg',['-v','error','-y','-f','lavfi','-i','sine=frequency=440:duration=0.15',audio]);
+ await Media.run('ffmpeg',['-v','error','-y','-f','lavfi','-i','color=black:size=32x32:rate=10','-t','0.2','-pix_fmt','yuv420p',video]);
+ await js('current().state.mediaFilter=["image","audio","video"];await navigateFolder(1)');assert.equal(await js('current().meta.path'),audio);
+ fs.unlinkSync(audio);await js('navigateFolder(-1)');assert.equal(await js('current().meta.path'),video);ok('The same live-directory behavior works across image, audio and video filters');
+ await js('saveSettings({...settings,folderDescending:true})');const currentList=await js('window.player.folderSnapshot({path:current().meta.path,types:current().state.mediaFilter})');assert.deepEqual(currentList.files,[video,c,a]);
+ await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),c);ok('Current sorting preferences are applied on each request');
+ await js('persistSoon(true)');win.webContents.reload();await wait('!!config && tabs.length===1 && loaded');
+ assert.equal(await js('current().meta.path'),c);fs.unlinkSync(c);await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),video);ok('Reloading the saved session does not restore obsolete folder entries');
+ await js('navigateFolder(1)');await wait('loaded && current().meta.isImage');await pause(250);
+ fs.renameSync(dir,path.join(out,'cela mapa premaknjena'));await js('navigateFolder(1)');assert.equal(await js('navigating'),false);assert.deepEqual(await js('[...current().folderStates.keys()]'),[]);ok('A moved directory leaves navigation responsive and clears obsolete per-file cache entries');
+ fs.mkdirSync(dir);fs.writeFileSync(a,png);fs.writeFileSync(e,png);await js('document.dispatchEvent(new KeyboardEvent("keydown",{key:"ArrowRight",code:"ArrowRight",ctrlKey:true,shiftKey:true,bubbles:true,cancelable:true}))');await wait('current().meta.path==='+JSON.stringify(e)+' && !navigating');assert.equal(await js('current().meta.path'),e);ok('Recreated directory contents are discovered without restarting');
+ for(const file of [b,c,d])fs.writeFileSync(file,png);await js('replaceCurrent('+JSON.stringify(c)+')');
+ const trash=shell.trashItem;shell.trashItem=async file=>fs.unlinkSync(file);await js('choose=async()=>"0";deleteCurrent()');shell.trashItem=trash;
+ assert.equal(await js('current().meta.path'),b);assert.equal(fs.existsSync(c),false);ok('In-app deletion still advances to the next file in the current sort order');
+ fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({success:true,checks,errors},null,2),'utf8');console.log(JSON.stringify({success:true,out}));app.quit();
+ }catch(error){console.error(error);Media.shutdown();app.exit(1);}});

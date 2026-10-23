@@ -67,27 +67,48 @@ function showTypeMenu(tab,anchor){
 document.addEventListener('pointerdown',event=>{if(!event.target.closest('#typeMenu,.mediaIcons'))$('typeMenu').hidden=true;});
 async function canLeaveDrawing(){if(stroke)commitStroke();return true;}
 async function replaceCurrent(file){
-  const old=current();if(!old)return;const meta=await window.player.describe(file),index=active;capture();video.pause();
+  const old=current();if(!old)return false;const meta=await window.player.describeExisting(file);if(!meta||current()!==old)return false;const index=active;capture();video.pause();
   const cache=old.folderStates||new Map();cache.set(old.meta.path,JSON.parse(JSON.stringify(old.state)));
   const saved=cache.get(meta.path),state={...fresh(),...saved,mediaFilter:old.state.mediaFilter||[old.meta.kind]};state.playing=!meta.isImage;cancelStroke();
   tabs[index]={meta,state,folderStates:cache,proxyUrl:null,preparing:false};active=-1;loaded=false;activate(index);
   if(!tabs.some(t=>t.meta.id===old.meta.id))await window.player.release(old.meta.id);
-  history.push({path:meta.path,opened:new Date().toISOString()});history=history.slice(-config.storage.historyEntries);persistSoon();
+  history.push({path:meta.path,opened:new Date().toISOString()});history=history.slice(-config.storage.historyEntries);persistSoon();return true;
+}
+async function browseCurrentFolder(direction,tab=current(),preferredFile=null){
+  if(!tab)return false;
+  const snapshot=await window.player.folderSnapshot({path:tab.meta.path,types:tab.state.mediaFilter||[tab.meta.kind]});
+  if(current()!==tab)return false;
+  const present=new Set(snapshot.existing.map(file=>file.toLowerCase()));
+  if(tab.folderStates)for(const file of tab.folderStates.keys())if(!present.has(file.toLowerCase()))tab.folderStates.delete(file);
+  const files=snapshot.files,i=files.findIndex(file=>file.toLowerCase()===tab.meta.path.toLowerCase());
+  // If the displayed file has gone, forward starts at the first live file;
+  // backward starts at the last. No historical directory list is consulted.
+  const preferred=preferredFile?files.findIndex(file=>file.toLowerCase()===preferredFile.toLowerCase()):-1;
+  const start=preferred>=0?preferred:i<0?(direction>0?0:files.length-1):(i+direction+files.length)%files.length;
+  for(let offset=0;offset<files.length;offset++){
+    const file=files[(start+direction*offset+files.length)%files.length];
+    if(file.toLowerCase()===tab.meta.path.toLowerCase())continue;
+    if(current()!==tab)return false;
+    if(await replaceCurrent(file)){
+      const next=current();if(next?.folderStates)for(const cached of next.folderStates.keys())if(!present.has(cached.toLowerCase()))next.folderStates.delete(cached);
+      persistSoon();return true;
+    }
+  }
+  persistSoon();return false;
 }
 async function navigateFolder(direction){
   if(navigating||!current())return;navigating=true;
-  try{if(!await canLeaveDrawing())return;const tab=current(),files=await window.player.folderFiles({id:tab.meta.id,types:tab.state.mediaFilter||[tab.meta.kind]});if(!files.length)return;
-    const i=files.findIndex(p=>p.toLowerCase()===tab.meta.path.toLowerCase()),next=(i+direction+files.length)%files.length;
-    if(files[next]!==tab.meta.path)await replaceCurrent(files[next]);
-  }finally{navigating=false;}
+  try{if(await canLeaveDrawing())await browseCurrentFolder(direction);}finally{navigating=false;}
 }
 async function deleteCurrent(){
   if(navigating||!current())return;navigating=true;
-  try{const tab=current(),files=await window.player.folderFiles({id:tab.meta.id,types:tab.state.mediaFilter||[tab.meta.kind]}),i=files.indexOf(tab.meta.path);
+  try{const tab=current();
     if(await choose(tr('Premakni datoteko v koš?','Move this file to the Recycle Bin?'),tab.meta.path,[tr('Da','Yes'),tr('Ne','No')])!=='0')return;
+    if(current()!==tab)return;
+    const {files}=await window.player.folderSnapshot({path:tab.meta.path,types:tab.state.mediaFilter||[tab.meta.kind]});
+    const index=files.findIndex(file=>file.toLowerCase()===tab.meta.path.toLowerCase()),next=files.length>1?files[(index+1)%files.length]:null;
     if(!await window.player.deleteFile({id:tab.meta.id,confirmed:true}))return;
-    const next=files.length>1?files[(i+1)%files.length]:null;
-    if(next)await replaceCurrent(next);else closeTab();
+    if(!await browseCurrentFolder(1,tab,next)&&current()===tab)closeTab();
     for(let j=tabs.length-1;j>=0;j--)if(tabs[j].meta.path===tab.meta.path)closeTab(j);
     closed=closed.filter(t=>t.path!==tab.meta.path);persistSoon(true);
   }finally{navigating=false;}

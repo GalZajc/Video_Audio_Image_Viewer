@@ -13,6 +13,9 @@ Za sistematičen pregled funkcij odpri **Review features.vbs**. Lokalna spletna 
 
 Odpiranje več datotek zahteva potrditev; privzeto je izbran Prekliči. V nastavitvah je stroga meja »Največ datotek pri enem odpiranju«, privzeto 20. Prevelika skupina se v celoti zavrne. Zaporedni zagoni iz Explorerja se združijo v eno zahtevo. Obnova shranjene seje ne sprašuje ponovno.
 
+
+Ctrl+Shift+levo/desno ob vsakem pritisku prebere trenutno vsebino mape. Izbrisane ali prestavljene datoteke preskoči, nove takoj vključi in odstrani shranjene nastavitve izginulih datotek. Upošteva izbrani vrstni red in vrste posnetkov.
+
 ## Bližnjice
 
 | Bližnjica | Dejanje |

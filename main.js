@@ -157,13 +157,16 @@ ipcMain.handle('export-folders',(_event,request)=>{
   const meta=metaFor(typeof request==='string'?request:request.id),type=request.kind||meta.kind,order=[type,...['video','audio','image'].filter(t=>t!==type)],key={video:'videos',audio:'music',image:'pictures'};
   return {choices:[{key:'source',path:path.dirname(meta.path)},{key:'downloads',path:app.getPath('downloads')},...order.map(t=>({key:t,path:app.getPath(key[t])}))],recent:load('recent-folders.json',[]).filter(p=>fs.existsSync(p))};
 });
-ipcMain.handle('folder-files',async(_event,{id,types})=>{
-  const meta=metaFor(id),dir=path.dirname(meta.path),extensions=(Array.isArray(types)?types:[meta.kind]).filter(t=>defaults.mediaTypes[t]).flatMap(t=>defaults.mediaTypes[t]);
-  const entries=await fs.promises.readdir(dir,{withFileTypes:true}),items=[];
-  for(const entry of entries){if(!entry.isFile()||!extensions.includes(path.extname(entry.name).slice(1).toLowerCase()))continue;const file=path.join(dir,entry.name);try{const stat=await fs.promises.stat(file);items.push({path:file,name:entry.name,modified:stat.mtimeMs,created:stat.birthtimeMs,size:stat.size});}catch{}}
-  const collator=new Intl.Collator(settings.language,{numeric:true,sensitivity:'base'}),key=settings.folderSort;
-  items.sort((a,b)=>((key==='name'?collator.compare(a.name,b.name):a[key]-b[key])||collator.compare(a.name,b.name))*(settings.folderDescending?-1:1));return items.map(p=>p.path);
-});
+const FolderNavigation=require('./folder-navigation-main');
+function folderSnapshot(request){
+  // Paths remain usable after the current file is deleted or its media handle expires.
+  const meta=typeof request.path==='string'&&path.isAbsolute(request.path)?null:metaFor(request.id);
+  const file=meta?meta.path:request.path,kind=meta?.kind||Object.keys(defaults.mediaTypes).find(type=>defaults.mediaTypes[type].includes(path.extname(file).slice(1).toLowerCase()));
+  return FolderNavigation.readFolder(file,Array.isArray(request.types)?request.types:[kind],defaults.mediaTypes,settings);
+}
+ipcMain.handle('folder-files',async(_event,request)=>(await folderSnapshot(request)).files);
+ipcMain.handle('folder-snapshot',(_event,request)=>folderSnapshot(request));
+ipcMain.handle('describe-existing',(_event,file)=>FolderNavigation.describeExisting(file,value=>Media.describe(value)));
 ipcMain.handle('confirm-leave',async event=>{const win=contextFor(event).window;const en=settings.language==='en';const result=await dialog.showMessageBox(win,{type:'question',message:en?'Leave the unfinished drawing?':'Zapusti nedokončano risanje?',detail:en?'The unfinished stroke will be discarded.':'Nedokončana poteza bo zavržena.',buttons:en?['Leave','Cancel']:['Zapusti','Prekliči'],defaultId:1,cancelId:1,noLink:true});return result.response===0;});
 ipcMain.handle('delete-file',async(_event,request)=>{
   if(exporting)throw new Error(settings.language==='en'?'Wait for export to finish.':'Počakaj, da se izvoz konča.');if(!request?.confirmed)return false;const meta=metaFor(request.id);
