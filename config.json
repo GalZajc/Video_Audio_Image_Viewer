@@ -61,7 +61,8 @@
     "recentFolders": 30,
     "maxImagePixels": 80000000,
     "maxSubtitleBytes": 8388608,
-    "maxThumbnailCacheBytes": 104857600
+    "maxThumbnailCacheBytes": 104857600,
+    "metadataEntries": 128
   },
   "export": {
     "videoFormat": "mp4",
@@ -194,7 +195,8 @@
     "timelinePreviewFitAspect": true,
     "tabDetachDistance": 28,
     "showRemovedClipboardImages": false,
-    "maxOpenFiles": 20
+    "maxOpenFiles": 20,
+    "folderStatConcurrency": 32
   },
   "associations": {
     "excluded": [
@@ -333,6 +335,8 @@
     "screenshotIndexCacheMs": 800
   },
   "fileOpening": {
-    "batchDelayMs": 600
+    "batchDelayMs": 600,
+    "prefetchConcurrency": 2,
+    "prefetchDelayMs": 120
   }
 }

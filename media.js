@@ -12,6 +12,12 @@ const cache=path.join(root,'DATA','cache');
 const processes=new Set();
 const indexTasks=new Map();
 const mediaById=new Map();
+// Small metadata only; released media streams and frame indexes are not retained.
+const metadataCache=new Map();
+function cacheMetadata(file,stat,meta){
+  metadataCache.delete(file);metadataCache.set(file,{size:stat.size,mtime:stat.mtimeMs,ctime:stat.ctimeMs,meta:structuredClone(meta)});
+  while(metadataCache.size>(config.storage.metadataEntries||128))metadataCache.delete(metadataCache.keys().next().value);
+}
 function tool(name){const local=path.join(__dirname,'bin',name+(process.platform==='win32'?'.exe':''));return config.tools[name] || (fs.existsSync(local)?local:name);}
 function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false}={}) {
   return new Promise((resolve,reject)=>{
@@ -27,9 +33,14 @@ function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false}=
   });
 }
 function parseRate(value){const [a,b]=String(value||'0/1').split('/').map(Number);return a/(b||1);}
-async function describe(file){
+async function describe(file,{activate=true}={}){
   file=path.resolve(file);const stat=await fs.promises.stat(file);if(!stat.isFile())throw new Error('Izberi datoteko.');
   const known=[...mediaById.values()].find(meta=>meta.path===file&&meta.size===stat.size&&meta.mtime===stat.mtimeMs);if(known)return known;
+  const cached=metadataCache.get(file);
+  if(cached&&cached.size===stat.size&&cached.mtime===stat.mtimeMs&&cached.ctime===stat.ctimeMs){
+    metadataCache.delete(file);metadataCache.set(file,cached);const result=structuredClone(cached.meta);if(activate)mediaById.set(result.id,result);return result;
+  }
+  metadataCache.delete(file);
   const isImage=config.mediaTypes.image.includes(path.extname(file).slice(1).toLowerCase());
   let json;
   if(path.extname(file).toLowerCase()==='.svg'){
@@ -55,6 +66,8 @@ async function describe(file){
     url:`media://local/${id}/original`};
   if(isImage&&result.width*result.height>config.storage.maxImagePixels)throw new Error('Slika presega omejitev 80 milijonov pikslov.');
   if(!Number.isFinite(result.duration)||result.duration<=0)throw new Error('Dolžine posnetka ni mogoče določiti.');
+  cacheMetadata(file,stat,result);
+  if(!activate)return result;
   const existing=mediaById.get(id);if(existing){Object.assign(existing,result);return existing;}mediaById.set(id,result);return result;
 }
 async function indexFrames(meta,notify=()=>{}){

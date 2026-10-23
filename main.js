@@ -166,6 +166,25 @@ function folderSnapshot(request){
 }
 ipcMain.handle('folder-files',async(_event,request)=>(await folderSnapshot(request)).files);
 ipcMain.handle('folder-snapshot',(_event,request)=>folderSnapshot(request));
+let pendingWarmFiles=[],warmingFiles=0;
+const warmInFlight=new Set();
+function warmNextFiles(){
+  while(warmingFiles<defaults.fileOpening.prefetchConcurrency&&pendingWarmFiles.length){
+    const file=pendingWarmFiles.shift();if(warmInFlight.has(file))continue;
+    warmingFiles++;warmInFlight.add(file);
+    Media.describe(file,{activate:false}).catch(()=>{}).finally(()=>{warmingFiles--;warmInFlight.delete(file);if(!quitting)warmNextFiles();});
+  }
+}
+ipcMain.on('warm-folder-neighbors',async(event,request)=>{
+  try{
+    const ctx=contextFor(event),generation=ctx.warmGeneration=(ctx.warmGeneration||0)+1;
+    const {files}=await folderSnapshot(request);
+    if(quitting||ctx.window.isDestroyed()||ctx.warmGeneration!==generation)return;
+    const index=files.findIndex(file=>file.toLowerCase()===request.path.toLowerCase());if(index<0)return;
+    pendingWarmFiles=[...new Set([-1,1].map(direction=>files[(index+direction+files.length)%files.length]))].filter(file=>file!==files[index]);
+    warmNextFiles();
+  }catch{} // Prefetch is optional; navigation itself reports real errors.
+});
 ipcMain.handle('describe-existing',(_event,file)=>FolderNavigation.describeExisting(file,value=>Media.describe(value)));
 ipcMain.handle('confirm-leave',async event=>{const win=contextFor(event).window;const en=settings.language==='en';const result=await dialog.showMessageBox(win,{type:'question',message:en?'Leave the unfinished drawing?':'Zapusti nedokončano risanje?',detail:en?'The unfinished stroke will be discarded.':'Nedokončana poteza bo zavržena.',buttons:en?['Leave','Cancel']:['Zapusti','Prekliči'],defaultId:1,cancelId:1,noLink:true});return result.response===0;});
 ipcMain.handle('delete-file',async(_event,request)=>{

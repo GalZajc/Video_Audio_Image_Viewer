@@ -24,7 +24,7 @@ app.whenReady().then(async()=>{try{
  fs.renameSync(e,path.join(moved,'05.png'));const id=await js('current().meta.id');Media.release(id);
  await js('navigateFolder(1)');assert.equal(await js('current().meta.path'),a);ok('A missing current file and expired media handle cannot block directory navigation');
  fs.writeFileSync(b,png);fs.writeFileSync(c,png);
- const originalDescribe=Media.describe;let raced=false;Media.describe=async file=>{if(file===b&&!raced){raced=true;fs.unlinkSync(b);}return originalDescribe(file);};
+ const originalDescribe=Media.describe;let raced=false;Media.describe=async(file,options)=>{if(file===b&&!raced){raced=true;fs.unlinkSync(b);}return originalDescribe(file,options);};
  await js('navigateFolder(1)');Media.describe=originalDescribe;assert.equal(await js('current().meta.path'),c);assert.equal(raced,true);assert.equal(await js('navigating'),false);ok('A file deleted between directory listing and opening is skipped within the same shortcut press');
  const audio=path.join(dir,'06.wav'),video=path.join(dir,'07.mp4');
  await Media.run('ffmpeg',['-v','error','-y','-f','lavfi','-i','sine=frequency=440:duration=0.15',audio]);
@@ -41,5 +41,14 @@ app.whenReady().then(async()=>{try{
  for(const file of [b,c,d])fs.writeFileSync(file,png);await js('replaceCurrent('+JSON.stringify(c)+')');
  const trash=shell.trashItem;shell.trashItem=async file=>fs.unlinkSync(file);await js('choose=async()=>"0";deleteCurrent()');shell.trashItem=trash;
  assert.equal(await js('current().meta.path'),b);assert.equal(fs.existsSync(c),false);ok('In-app deletion still advances to the next file in the current sort order');
- fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({success:true,checks,errors},null,2),'utf8');console.log(JSON.stringify({success:true,out}));app.quit();
+ const warmFile=path.join(out,'warm čšž.png');fs.writeFileSync(warmFile,png);
+ const warmMeta=await Media.describe(warmFile,{activate:false});assert.equal(Media.mediaById.has(warmMeta.id),false);
+ const activeMeta=await Media.describe(warmFile);assert.equal(activeMeta.id,warmMeta.id);assert.equal(Media.mediaById.has(activeMeta.id),true);Media.release(activeMeta.id);
+ fs.unlinkSync(warmFile);await assert.rejects(()=>Media.describe(warmFile),error=>error.code==='ENOENT');
+ fs.writeFileSync(warmFile,png);fs.utimesSync(warmFile,new Date(),new Date(Date.now()+5000));const changedMeta=await Media.describe(warmFile);assert.notEqual(changedMeta.id,warmMeta.id);Media.release(changedMeta.id);
+ ok('Metadata warmup retains no active streams, rejects deleted files and invalidates changed files');
+ const Folder=require(path.join(bundle,'folder-navigation-main')),mediaTypes=require(path.join(bundle,'config')).mediaTypes;
+ for(const sort of ['modified','created','size']){const snapshot=await Folder.readFolder(a,['image'],mediaTypes,{language:'sl',folderSort:sort,folderStatConcurrency:2});const entries=snapshot.files.map(file=>({file,stat:fs.statSync(file)}));for(let i=1;i<entries.length;i++){const key={modified:'mtimeMs',created:'birthtimeMs',size:'size'}[sort];assert.ok(entries[i-1].stat[key]<=entries[i].stat[key]);}}
+ ok('Bounded parallel metadata reads preserve date and size sorting');
+ fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({success:true,checks,errors},null,2),'utf8');console.log(JSON.stringify({success:true,out}));Media.shutdown();app.exit(0);
  }catch(error){console.error(error);Media.shutdown();app.exit(1);}});

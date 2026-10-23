@@ -192,3 +192,12 @@ $('drawTool').addEventListener('change',()=>{drawingOptions.tool=$('drawTool').v
 
 $('textInput').addEventListener('close',()=>{if(stroke?.kind!=='text')return;if($('textInput').returnValue==='apply'&&$('textContent').value.trim()){stroke.text=$('textContent').value;commitStroke();}else{cancelStroke();redrawDrawings();}});
 $('fontFamily').addEventListener('change',()=>drawingOptions.font=$('fontFamily').value);$('fontSize').addEventListener('input',()=>drawingOptions.fontSize=C.clamp(Number($('fontSize').value)||24,1,10000));
+
+// Debounce warmup when stepping rapidly. Each activation still browses a fresh list.
+let folderWarmTimer;
+const activateBeforeFolderWarmup=activate;
+activate=function(index){
+  activateBeforeFolderWarmup(index);clearTimeout(folderWarmTimer);
+  const tab=current();if(!tab)return;
+  folderWarmTimer=setTimeout(()=>{if(current()===tab)window.player.warmFolderNeighbors({path:tab.meta.path,types:tab.state.mediaFilter||[tab.meta.kind]});},config.fileOpening.prefetchDelayMs);
+};
