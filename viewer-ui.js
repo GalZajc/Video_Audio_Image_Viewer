@@ -14,8 +14,8 @@ function localize(){
 function initViewer(){drawingOptions={...config.drawing};localize();renderDrawingMenu();renderEditorSettings();}
 function loadImage(tab){
   const img=$('image'),stamp=epoch;img.onload=()=>{if(stamp!==epoch)return;tab.meta.width=img.naturalWidth;tab.meta.height=img.naturalHeight;loaded=true;img.style.display='block';layout();syncPanels();requestAnimationFrame(()=>window.player.dragContentReady());};
-  img.onerror=async()=>{if(stamp!==epoch)return;try{if(tab.imageUrl)throw new Error(tr('Slike ni mogoče prikazati.','Unable to display image.'));tab.imageUrl=await window.player.prepareImage(tab.meta.id);if(stamp===epoch)img.src=tab.imageUrl;}catch(error){showError(error);}};
-  if(tab.meta.videoCodec==='svg'&&!tab.imageUrl){window.player.prepareImage(tab.meta.id).then(url=>{tab.imageUrl=url;if(stamp===epoch)img.src=url;}).catch(showError);}else img.src=tab.imageUrl||tab.meta.url;
+  img.onerror=async()=>{if(stamp!==epoch)return;try{if(tab.imageUrl)throw new Error(tr('Slike ni mogoče prikazati.','Unable to display image.'));tab.imageUrl=await window.player.prepareImage(tab.meta.id);if(stamp===epoch)img.src=tab.imageUrl;}catch(error){if(stamp===epoch)showError(error);}};
+  if(tab.meta.videoCodec==='svg'&&!tab.imageUrl){window.player.prepareImage(tab.meta.id).then(url=>{tab.imageUrl=url;if(stamp===epoch)img.src=url;}).catch(error=>{if(stamp===epoch)showError(error);});}else img.src=tab.imageUrl||tab.meta.url;
 }
 function syncPanels(){
   const tab=current();$('rotationPanel').hidden=!tab||tab.meta.isAudio||!tab.state.rotationVisible;
@@ -67,7 +67,7 @@ function showTypeMenu(tab,anchor){
 document.addEventListener('pointerdown',event=>{if(!event.target.closest('#typeMenu,.mediaIcons'))$('typeMenu').hidden=true;});
 async function canLeaveDrawing(){if(stroke)commitStroke();return true;}
 async function replaceCurrent(file){
-  const old=current();if(!old)return false;const meta=await window.player.describeExisting(file);if(!meta||current()!==old)return false;const index=active;capture();video.pause();
+  const old=current();if(!old)return false;const meta=await window.player.describeExisting(file);if(!meta)return false;if(current()!==old){if(!tabs.some(tab=>tab.meta.id===meta.id))window.player.release(meta.id).catch(()=>{});return false;}const index=active;capture();video.pause();
   const cache=old.folderStates||new Map();cache.set(old.meta.path,JSON.parse(JSON.stringify(old.state)));
   const saved=cache.get(meta.path),state={...fresh(),...saved,mediaFilter:old.state.mediaFilter||[old.meta.kind]};state.playing=!meta.isImage;cancelStroke();
   tabs[index]={meta,state,folderStates:cache,proxyUrl:null,preparing:false};active=-1;loaded=false;activate(index);

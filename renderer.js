@@ -142,44 +142,46 @@ function frameCallback(_now,metadata){
   video.requestVideoFrameCallback(frameCallback);
 }
 if(video.requestVideoFrameCallback)video.requestVideoFrameCallback(frameCallback);
+function liveMedia(){const tab=current();return tab&&!tab.meta.isImage&&video.currentSrc===(tab.proxyUrl||tab.meta.url)&&video.readyState>=1?tab:null;}
 video.addEventListener('loadedmetadata',()=>{
-  const tab=current();if(!tab)return;loaded=true;
+  const tab=liveMedia();if(!tab)return;loaded=true;
   if(tab.state.time>0)video.currentTime=C.clamp(tab.state.time,0,Math.max(0,video.duration-.00001));
   tab.state.time=Math.min(tab.state.time,video.duration);video.playbackRate=tab.state.rate;layout();updateTimeline();
-  if(tab.state.playing)video.play().catch(showError);else drawStill();
+  if(tab.state.playing){const stamp=epoch;video.play().catch(error=>{if(stamp===epoch&&error.name!=='AbortError')showError(error);});}else drawStill();
 });
 video.addEventListener('loadeddata',()=>{drawStill();requestAnimationFrame(()=>window.player.dragContentReady());});
 video.addEventListener('seeked',()=>{
-  const tab=current();if(!tab||!loaded||tab.meta.isImage)return;seekTarget=null;tab.state.time=video.currentTime;
-  if(video.paused&&!tab.meta.isAudio){const stamp=epoch,target=video.currentTime;window.player.frame({id:tab.meta.id,time:target}).then(frame=>{if(stamp===epoch&&video.paused&&!video.seeking&&Math.abs(video.currentTime-target)<.00001){tab.state.frameTime=frame.time;drawStill();updateTimeline();}}).catch(showError);}
+  const tab=liveMedia();if(!tab||!loaded)return;seekTarget=null;tab.state.time=video.currentTime;
+  if(video.paused&&!tab.meta.isAudio){const stamp=epoch,target=video.currentTime;window.player.frame({id:tab.meta.id,time:target}).then(frame=>{if(stamp===epoch&&video.paused&&!video.seeking&&Math.abs(video.currentTime-target)<.00001){tab.state.frameTime=frame.time;drawStill();updateTimeline();}}).catch(error=>{if(stamp===epoch)showError(error);});}
   drawStill();updateTimeline();persistSoon();
 });
-video.addEventListener('play',()=>{if(current())current().state.playing=true;still.style.display='none';controls();persistSoon();});
-video.addEventListener('pause',()=>{if(current())current().state.playing=false;drawStill();controls();updateTimeline();persistSoon();});
-video.addEventListener('ended',()=>{if(current())current().state.playing=false;drawStill();controls();persistSoon();});
+video.addEventListener('play',()=>{if(!loaded||!liveMedia()||video.paused)return;if(current())current().state.playing=true;still.style.display='none';controls();persistSoon();});
+video.addEventListener('pause',()=>{if(!loaded||!liveMedia()||!video.paused)return;if(current())current().state.playing=false;drawStill();controls();updateTimeline();persistSoon();});
+video.addEventListener('ended',()=>{if(!loaded||!liveMedia()||!video.ended)return;if(current())current().state.playing=false;drawStill();controls();persistSoon();});
 async function prepareProxy(tab){
   if(!tab||tab.preparing)return;if(tab.proxyUrl)return showError('Posnetka ni mogoče predvajati niti po pretvorbi.');
   const stamp=epoch;tab.preparing=true;
   try{tab.proxyUrl=await window.player.prepare(tab.meta.id);if(stamp===epoch){video.src=tab.proxyUrl;video.load();}}
-  catch(error){showError(error);}finally{tab.preparing=false;}
+  catch(error){if(stamp===epoch)showError(error);}finally{tab.preparing=false;}
 }
-video.addEventListener('error',()=>{if(video.getAttribute('src')&&current()&&!current().meta.isImage)prepareProxy(current());});
+video.addEventListener('error',()=>{if(video.error&&video.error.code!==1&&video.getAttribute('src')&&current()&&!current().meta.isImage)prepareProxy(current());});
 function seekTo(time){const tab=current();if(!tab||!loaded||tab.meta.isImage)return;seekTarget=C.clamp(time,0,Math.max(0,tab.meta.duration-.000001));video.currentTime=seekTarget;tab.state.time=seekTarget;updateTimeline();controls();}
 function seek(delta){stepTarget=null;seekTo((seekTarget??video.currentTime)+delta);}
 function step(direction){
   const tab=current();if(!tab||!loaded||tab.meta.isAudio||tab.meta.isImage)return;video.pause();const stamp=epoch;
-  stepQueue=stepQueue.catch(()=>{}).then(async()=>{if(stamp!==epoch)return;const frame=await window.player.frame({id:tab.meta.id,time:stepTarget??(seekTarget??video.currentTime),direction});if(stamp!==epoch)return;stepTarget=frame.time;tab.state.frameTime=frame.time;seekTo(frame.time+Math.min(.0001,(frame.end-frame.time)/4));});stepQueue.catch(showError);
+  stepQueue=stepQueue.catch(()=>{}).then(async()=>{if(stamp!==epoch)return;const frame=await window.player.frame({id:tab.meta.id,time:stepTarget??(seekTarget??video.currentTime),direction});if(stamp!==epoch)return;stepTarget=frame.time;tab.state.frameTime=frame.time;seekTo(frame.time+Math.min(.0001,(frame.end-frame.time)/4));});stepQueue.catch(error=>{if(stamp===epoch)showError(error);});
 }
 function mark(which){
   const tab=current();if(!tab||!loaded||tab.meta.isImage)return;const stamp=epoch;
   // Capture the timestamp at the keystroke, before the asynchronous lookup.
   const time=tab.meta.isAudio||video.paused?(seekTarget??video.currentTime):(seekTarget??tab.state.frameTime);
   markQueue=markQueue.catch(()=>{}).then(async()=>{
+    if(stamp!==epoch)return;
     const frame=tab.meta.isAudio?{time,end:time}:await window.player.frame({id:tab.meta.id,time});if(stamp!==epoch)return;
     if(frame.duration)tab.meta.duration=frame.duration;tab.state[which]=frame;
     if(tab.state.in&&tab.state.out&&tab.state.in.time>tab.state.out.time){tab.state[which==='in'?'out':'in']=null;tab.state.timelineZoom=false;}
     updateTimeline();persistSoon();controls();toast(`${which==='in'?'I':'O'} · ${timeLabel(frame.time,true)}`,1100);
-  });markQueue.catch(showError);
+  });markQueue.catch(error=>{if(stamp===epoch)showError(error);});
 }
 function range(){const tab=current();if(!tab)return [0,1];const s=tab.state;if(s.timelineZoom&&s.in&&s.out&&s.out.end>s.in.time)return [s.in.time,s.out.end];return [0,tab.meta.duration];}
 function updateTimeline(){

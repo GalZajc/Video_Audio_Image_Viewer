@@ -269,7 +269,9 @@
     "maxFrames": 256,
     "seekTimeoutMs": 4000,
     "warmDelayMs": 15,
-    "storedSources": 4
+    "storedSources": 4,
+    "initialWarmDelayMs": 400,
+    "backgroundWarmDelayMs": 100
   },
   "subtitles": {
     "extensions": [

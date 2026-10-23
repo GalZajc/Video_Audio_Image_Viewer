@@ -33,12 +33,21 @@ function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false}=
   });
 }
 function parseRate(value){const [a,b]=String(value||'0/1').split('/').map(Number);return a/(b||1);}
+const describeTasks=new Map();
 async function describe(file,{activate=true}={}){
   file=path.resolve(file);const stat=await fs.promises.stat(file);if(!stat.isFile())throw new Error('Izberi datoteko.');
   const known=[...mediaById.values()].find(meta=>meta.path===file&&meta.size===stat.size&&meta.mtime===stat.mtimeMs);if(known)return known;
+  const key=file+'\0'+stat.size+'\0'+stat.mtimeMs+'\0'+stat.ctimeMs;
+  let task=describeTasks.get(key);if(!task){task=describeMetadata(file,stat).finally(()=>describeTasks.delete(key));describeTasks.set(key,task);}
+  const result=await task;
+  if(activate){const existing=mediaById.get(result.id);if(existing)return existing;mediaById.set(result.id,result);}
+  return result;
+}
+async function describeMetadata(file,stat){
+  const known=[...mediaById.values()].find(meta=>meta.path===file&&meta.size===stat.size&&meta.mtime===stat.mtimeMs);if(known)return known;
   const cached=metadataCache.get(file);
   if(cached&&cached.size===stat.size&&cached.mtime===stat.mtimeMs&&cached.ctime===stat.ctimeMs){
-    metadataCache.delete(file);metadataCache.set(file,cached);const result=structuredClone(cached.meta);if(activate)mediaById.set(result.id,result);return result;
+    metadataCache.delete(file);metadataCache.set(file,cached);const result=structuredClone(cached.meta);return result;
   }
   metadataCache.delete(file);
   const isImage=config.mediaTypes.image.includes(path.extname(file).slice(1).toLowerCase());
@@ -67,8 +76,7 @@ async function describe(file,{activate=true}={}){
   if(isImage&&result.width*result.height>config.storage.maxImagePixels)throw new Error('Slika presega omejitev 80 milijonov pikslov.');
   if(!Number.isFinite(result.duration)||result.duration<=0)throw new Error('Dolžine posnetka ni mogoče določiti.');
   cacheMetadata(file,stat,result);
-  if(!activate)return result;
-  const existing=mediaById.get(id);if(existing){Object.assign(existing,result);return existing;}mediaById.set(id,result);return result;
+  return result;
 }
 async function indexFrames(meta,notify=()=>{}){
   if(meta.isAudio||meta.isImage)return null;

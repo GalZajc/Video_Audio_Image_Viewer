@@ -38,15 +38,27 @@ function routeFiles(files){
   const ctx=windowContexts.get(target.webContents.id);ctx.pending.push(...files);scheduleFileOpen(ctx);
   if(target.isMinimized())target.restore();target.show();target.focus();
 }
-function sweepReleases(){const used=new Set(liveWindows().flatMap(c=>c.state.tabs||[]).map(t=>t.path));for(const id of releaseRequests){const meta=Media.mediaById.get(id);if(meta&&!used.has(meta.path)&&!exporting){Media.release(id);releaseRequests.delete(id);}}}
+function sweepReleases(){
+  const used=new Set(liveWindows().flatMap(c=>c.state.tabs||[]).map(t=>t.path));
+  const owned=new Set([...windowContexts.values()].flatMap(ctx=>[...ctx.mediaIds]));
+  for(const id of releaseRequests){const meta=Media.mediaById.get(id);if(!meta){releaseRequests.delete(id);continue;}if(!owned.has(id)&&!used.has(meta.path)&&!exporting){Media.release(id);releaseRequests.delete(id);}}
+}
+async function describeOwned(event,file,existing=false){
+  const ctx=contextFor(event),meta=existing?await require('./folder-navigation-main').describeExisting(file,value=>Media.describe(value)):await Media.describe(file);
+  if(meta){
+    if(ctx.window.isDestroyed()){releaseRequests.add(meta.id);sweepReleases();return null;}
+    ctx.mediaIds.add(meta.id);releaseRequests.delete(meta.id);
+  }
+  return meta;
+}
 function createWindow(saved={tabs:[],active:0,closed:[],history:[]},bounds=null,options={}){
   const initialBounds=(saved.maximized||saved.fullscreen)&&saved.normalBounds?saved.normalBounds:bounds;
   const created=new BrowserWindow({...defaults.window,...initialBounds,show:!options.temporary&&process.env.VAP_TEST_MODE!=='1',frame:false,backgroundColor:'#080808',title:'Video Audio Image Viewer',icon:path.join(__dirname,'assets','icon.png'),webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false,offscreen:process.env.VAP_TEST_MODE==='1'}});
-  const ctx={window:created,temporary:!!options.temporary,dragPresentation:options.dragPresentation||null,state:{tabs:saved.tabs||[],active:saved.active||0,closed:saved.closed||[],history:saved.history||[]},ready:false,pending:[],bounds:created.getBounds(),normalBounds:created.getNormalBounds(),maximized:false,fullscreen:false};windowContexts.set(created.webContents.id,ctx);if(!ctx.temporary&&(!win||win.isDestroyed()))win=created;
+  const ctx={window:created,mediaIds:new Set(),temporary:!!options.temporary,dragPresentation:options.dragPresentation||null,state:{tabs:saved.tabs||[],active:saved.active||0,closed:saved.closed||[],history:saved.history||[]},ready:false,pending:[],bounds:created.getBounds(),normalBounds:created.getNormalBounds(),maximized:false,fullscreen:false};windowContexts.set(created.webContents.id,ctx);if(!ctx.temporary&&(!win||win.isDestroyed()))win=created;
   created.on('focus',()=>{if(!ctx.temporary){win=created;toolWindows.focusOwner(ctx);}});created.webContents.setWindowOpenHandler(()=>({action:'deny'}));created.webContents.on('will-navigate',e=>e.preventDefault());created.on('maximize',()=>created.webContents.send('maximized',true));created.on('unmaximize',()=>created.webContents.send('maximized',false));
   created._fullscreenState=false;for(const event of ['enter-full-screen','leave-full-screen'])created.on(event,()=>{created._fullscreenState=event==='enter-full-screen';created.webContents.send('fullscreen',created._fullscreenState);});
   created.on('close',event=>{ctx.bounds=created.getBounds();ctx.normalBounds=created.getNormalBounds();ctx.maximized=created.isMaximized();ctx.fullscreen=created.isFullScreen();if(exporting){event.preventDefault();dialog.showMessageBox(created,{type:'info',message:settings?.language==='en'?'Export is still running.':'Izvoz še poteka.',buttons:[settings?.language==='en'?'OK':'V redu']});}});
-  const id=created.webContents.id;created.on('closed',()=>{windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting&&!ctx.temporary)saveWindows(ctx);sweepReleases();if(!quitting&&!ctx.temporary&&!liveWindows().length){toolWindows.destroyToolWindows();app.quit();}});
+  const id=created.webContents.id;created.on('closed',()=>{for(const mediaId of ctx.mediaIds)releaseRequests.add(mediaId);windowContexts.delete(id);if(win===created)win=liveWindows().at(-1)?.window||null;if(!quitting&&!ctx.temporary)saveWindows(ctx);sweepReleases();if(!quitting&&!ctx.temporary&&!liveWindows().length){toolWindows.destroyToolWindows();app.quit();}});
   ctx.loaded=created.loadFile(path.join(__dirname,'index.html')).then(async()=>{if(saved.maximized)created.maximize();if(saved.fullscreen)await setFullscreen(true,created);if(process.env.VAP_TEST_MODE==='1')created.hide();return created;}).catch(error=>{if(created.isDestroyed())return created;throw error;});return created;
 }
 function load(name,fallback){try{return JSON.parse(fs.readFileSync(path.join(data,name),'utf8'));}catch{return fallback;}}
@@ -103,7 +115,7 @@ function notify(id,event){for(const ctx of liveWindows())ctx.window.webContents.
 ipcMain.handle('init',event=>{const ctx=contextFor(event);ctx.ready=true;scheduleFileOpen(ctx);const files=[];return {config:defaults,settings,state:ctx.state,files,windowId:ctx.window.id,dragPresentation:ctx.dragPresentation};});
 ipcMain.handle('pick-files',async event=>{const win=contextFor(event).window;const result=await dialog.showOpenDialog(win,{title:settings.language==='en'?'Open media':'Odpri video, zvok ali sliko',properties:['openFile','multiSelections'],filters:[{name:'Video / Audio / Images',extensions:Object.values(defaults.mediaTypes).flat()},{name:'All files',extensions:['*']}]});return result.canceled?[]:result.filePaths;});
 ipcMain.handle('authorize-files',(event,files)=>authorizeFiles(contextFor(event).window,files));
-ipcMain.handle('describe',(_event,file)=>Media.describe(file));
+ipcMain.handle('describe',(event,file)=>describeOwned(event,file));
 ipcMain.handle('frame',(_event,{id,time,direction})=>Media.getFrame(metaFor(id),Number(time),Number(direction)||0,event=>notify(id,event)));
 ipcMain.handle('prepare-image',async(_event,id)=>{
   const meta=metaFor(id);if(!meta.isImage)throw new Error('Not an image.');await fs.promises.mkdir(Media.cache,{recursive:true});
@@ -112,7 +124,7 @@ ipcMain.handle('prepare-image',async(_event,id)=>{
   meta.image=target;return `media://local/${meta.id}/image`;
 });
 ipcMain.handle('prepare',(_event,id)=>Media.proxy(metaFor(id),event=>notify(id,event)));
-ipcMain.handle('release',(_event,id)=>{releaseRequests.add(id);sweepReleases();});
+ipcMain.handle('release',(event,id)=>{contextFor(event).mediaIds.delete(id);releaseRequests.add(id);sweepReleases();});
 ipcMain.handle('reveal',(_event,id)=>shell.showItemInFolder(metaFor(id).path));
 ipcMain.handle('fullscreen',event=>{const target=contextFor(event).window;return setFullscreen(!target._fullscreenState,target);});
 ipcMain.handle('fit-video-window',async(_event,{ratio,headerHeight,expand=false,maxMode=null})=>{const win=contextFor(_event).window;
@@ -185,7 +197,7 @@ ipcMain.on('warm-folder-neighbors',async(event,request)=>{
     warmNextFiles();
   }catch{} // Prefetch is optional; navigation itself reports real errors.
 });
-ipcMain.handle('describe-existing',(_event,file)=>FolderNavigation.describeExisting(file,value=>Media.describe(value)));
+ipcMain.handle('describe-existing',(event,file)=>describeOwned(event,file,true));
 ipcMain.handle('confirm-leave',async event=>{const win=contextFor(event).window;const en=settings.language==='en';const result=await dialog.showMessageBox(win,{type:'question',message:en?'Leave the unfinished drawing?':'Zapusti nedokončano risanje?',detail:en?'The unfinished stroke will be discarded.':'Nedokončana poteza bo zavržena.',buttons:en?['Leave','Cancel']:['Zapusti','Prekliči'],defaultId:1,cancelId:1,noLink:true});return result.response===0;});
 ipcMain.handle('delete-file',async(_event,request)=>{
   if(exporting)throw new Error(settings.language==='en'?'Wait for export to finish.':'Počakaj, da se izvoz konča.');if(!request?.confirmed)return false;const meta=metaFor(request.id);
