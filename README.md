@@ -144,7 +144,7 @@ The shaft mask is restricted to the apex neighborhood. Earlier bends remain visi
 
 ## Version 2.6.0
 
-Ctrl+C copies the current image with exactly the PNG export transform/crop/annotation pipeline, followed by a brief green flash. It leaves the clipboard unchanged for audio/video. The encoded image is piped directly into the clipboard; temporary input rasters are removed.
+Ctrl+C copies the current image or the currently displayed video frame, with the spatial crop, rotation, mirrors and visible drawings. Video I/O marks do not affect this single-frame copy. A brief light-blue flash confirms the copy. Audio leaves the clipboard unchanged. The encoded image is piped directly into the clipboard; temporary input rasters are removed.
 
 Ctrl+O opens folder choices and a paged, lazy thumbnail gallery of the Windows Screenshots known folder, newest first. Clicking a screenshot opens a new tab. Redirected Screenshots folders are read from the current user's known-folder setting.
 
@@ -205,3 +205,6 @@ On a private 580×771 browser screenshot, the previous pipeline took 20.9 s (97 
 The app discovers the installed Snipping Tool and keeps a private versioned copy of its OCR runtime in DATA/cache/oneocr-runtime. Microsoft DLLs/models are **not included** in source control or release ZIPs. WindowsApps file restrictions require this private copy on some systems. An embedded UTF-8 process manifest preserves Slovenian paths without renaming folders or relying on short paths. If Snipping Tool is unavailable/incompatible, a bounded single-pass legacy Windows OCR fallback remains available. Its reason and engine name are recorded in the returned diagnostic data.
 
 The portable build compiles the included C# bridge with the Windows .NET Framework compiler and includes the resulting executable; no Python, SDK install, cloud API or image upload is needed. Engine limits, timeouts, CPU count, idle lifetime and cache size are centralized in config.extras.ocrEngine. After five idle minutes the model process exits. Run npm run test:ocr-native; optional VAP_OCR_SAMPLE and VAP_OCR_EXPECTED_JSON verify a private sample without publishing it. Tests intercept copying and leave the Windows clipboard untouched.
+
+
+Export progress includes a compact Cancel button. Cancel stops the active export worker or file-copy stream, removes unfinished output and preserves an existing destination. Ctrl+Shift+Delete opens a centered menu with separate choices for the time selection (I/O), spatial crop, and drawings; only selected items on the current tab are cleared. The shortcut can be remapped in Settings.

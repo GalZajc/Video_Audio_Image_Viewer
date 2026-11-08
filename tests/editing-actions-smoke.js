@@ -1,0 +1,48 @@
+'use strict';
+const {app,dialog}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),cp=require('node:child_process');
+const project=path.resolve(__dirname,'..'),bundle=process.env.VAP_BUNDLE||project,out=path.join(project,'OUTPUT','editing_actions_'+new Date().toISOString().replace(/[:.]/g,'-'));
+fs.mkdirSync(out,{recursive:true});process.env.VAP_ROOT=out;process.env.VAP_TEST_MODE='1';process.env.VAP_TEST_CLIPBOARD_DIR=out;app.setPath('userData',path.join(out,'electron'));
+let slowExport=true,exportChild;const spawn=cp.spawn;
+cp.spawn=(binary,args,options)=>{if(slowExport&&args.some(value=>String(value).includes('.partial.mp4'))){slowExport=false;args=[...args];args.splice(args.indexOf('-i'),0,'-re');exportChild=spawn(binary,args,options);return exportChild;}return spawn(binary,args,options);};
+const Main=require(path.join(bundle,'main')),Media=require(path.join(bundle,'media')),pause=ms=>new Promise(resolve=>setTimeout(resolve,ms)),checks=[];let win,destination=path.join(out,'selection.mp4');
+const js=source=>win.webContents.executeJavaScript(source.includes('await ')&&!source.startsWith('(async')?'(async()=>{'+source+'})()':source);
+async function wait(source){for(let i=0;i<1500;i++){if(await js(source))return;await pause(10);}throw Error('Timeout '+source);}
+function ok(text){checks.push(text);console.log('PASS '+text);}
+dialog.showSaveDialog=async()=>({canceled:false,filePath:destination});
+app.whenReady().then(async()=>{try{
+ while(!(win=Main.getWindow()))await pause(20);await wait('!!config && !!drawingOptions');
+ const source=path.join(out,'video čšž.mp4');await Media.run('ffmpeg',['-v','error','-y','-f','lavfi','-i','testsrc2=size=128x96:rate=4','-t','2','-pix_fmt','yuv420p',source]);
+ await js('openFiles('+JSON.stringify([source])+')');await wait('loaded && video.readyState>=2');await js('video.pause();video.currentTime=.75;void 0');await wait('!video.seeking && Math.abs(video.currentTime-.75)<.01');
+ await js('current().state.in={time:0,index:0};current().state.out={time:1.75,end:2,index:7};current().state.crop={xmin:7,ymin:9,xmax:50,ymax:40};current().state.cropSpace="rotated";current().state.cropVisible=true;layout();window.expectedFrame=imageRaster(current());void 0');
+ await js('document.activeElement.blur();document.dispatchEvent(new KeyboardEvent("keydown",{key:"c",code:"KeyC",ctrlKey:true,bubbles:true,cancelable:true}));void 0');await wait('!copyBusy');
+ const copied=path.join(out,'clipboard.png');assert.ok(fs.existsSync(copied),'Ctrl+C must write a captured frame');
+ const expected=path.join(out,'expected-frame.png');fs.writeFileSync(expected,Buffer.from(await js('expectedFrame'),'base64'));
+ const raw=await Media.run('ffmpeg',['-v','error','-i',copied,'-f','rawvideo','-pix_fmt','rgba','pipe:1'],{binary:true});
+ const expectedRaw=await Media.run('ffmpeg',['-v','error','-i',expected,'-vf','crop=43:31:7:9:exact=1','-f','rawvideo','-pix_fmt','rgba','pipe:1'],{binary:true});
+ assert.equal(raw.length,43*31*4);assert.deepEqual(raw,expectedRaw);ok('Ctrl+C copies the displayed video frame with the odd-sized spatial crop, ignoring the different I/O interval; real clipboard is untouched');
+ const savedView=await js('current().state.view');await js('current().state.drawings=[{points:[{x:10,y:10},{x:20,y:20}],width:2,color:"#ff0000"}];current().state.redo=[{points:[]}];document.dispatchEvent(new KeyboardEvent("keydown",{key:"Delete",code:"Delete",ctrlKey:true,shiftKey:true,bubbles:true,cancelable:true}));void 0');
+ await wait('$("clearEdits").open');assert.equal(await js('$("applyClearEdits").disabled'),true);
+ win.show();win.webContents.invalidate();await pause(100);fs.writeFileSync(path.join(out,'clear-menu.png'),(await win.webContents.capturePage()).toPNG());
+ const bounds=await js('(()=>{const r=$("clearEdits").getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,w:innerWidth,h:innerHeight}})()');assert.ok(Math.abs(bounds.x-bounds.w/2)<2);assert.ok(Math.abs(bounds.y-bounds.h/2)<2);
+ await js('$("clearTemporal").click();$("applyClearEdits").click();void 0');assert.equal(await js('current().state.in'),null);assert.equal(await js('current().state.out'),null);assert.ok(await js('current().state.crop'));assert.equal(await js('current().state.drawings.length'),1);
+ await js('openClearEdits();$("clearSpatial").click();$("clearDrawings").click();$("cancelClearEdits").click();void 0');assert.ok(await js('current().state.crop'));assert.equal(await js('current().state.drawings.length'),1);
+ await js('openClearEdits();$("clearSpatial").click();$("clearDrawings").click();$("applyClearEdits").click();void 0');assert.equal(await js('current().state.crop'),null);assert.equal(await js('current().state.drawings.length'),0);assert.equal(await js('current().state.redo.length'),0);assert.deepEqual(await js('current().state.view'),savedView);
+ ok('Centered Ctrl+Shift+Delete menu clears only selected temporal/spatial/drawing edits; Cancel preserves edits and zoom stays unchanged');
+ await js('current().state.crop={xmin:2,ymin:2,xmax:122,ymax:90};current().state.cropVisible=true;layout();await showExportMenu(current());$("exportOpen").checked=false;$("exportMenu").close();void 0');
+ fs.writeFileSync(destination,'existing destination must survive cancellation');
+ const unrelated=Media.run('ffmpeg',['-v','error','-re','-f','lavfi','-i','color=blue:size=16x16:rate=2','-t','2','-f','null','-']);
+ await js('window.exportTask=exportToFolder(current(),'+JSON.stringify(out)+');void 0');await wait('!$("cancelExport").hidden && !$("cancelExport").disabled');
+ for(let n=0;n<500&&!exportChild;n++)await pause(10);assert.ok(exportChild,'A real FFmpeg export must have started');await pause(150);
+ assert.equal(await js('window.player.cancelExport("obsolete-job")'),false);
+ const cancelStart=Date.now();await js('$("cancelExport").click();void 0');await js('exportTask');const cancelMs=Date.now()-cancelStart;await unrelated;
+ assert.equal(await js('exportBusy'),false);assert.equal(await js('$("job").style.display'),'none');assert.ok(exportChild.exitCode!==null||exportChild.signalCode!==null);
+ assert.equal(fs.readFileSync(destination,'utf8'),'existing destination must survive cancellation');assert.equal(fs.readdirSync(out).filter(name=>name.includes('.partial.')).length,0);
+ ok('Cancel button terminates the actual FFmpeg export, removes its partial file, preserves the existing destination and does not stop unrelated FFmpeg work');
+ destination=path.join(out,'retry.mp4');await js('exportToFolder(current(),'+JSON.stringify(out)+')');assert.ok(fs.existsSync(destination));assert.equal(await js('exportBusy'),false);ok('A new export succeeds immediately after cancellation');
+ const controller=new AbortController(),copyDestination=path.join(out,'copy-canceled.mp4'),meta=await Media.describe(source);
+ await assert.rejects(()=>Media.exportMedia(meta,{},require(path.join(bundle,'config')).export,copyDestination,event=>{if(event.fraction>0&&event.cancellable!==false)controller.abort();},{signal:controller.signal}),error=>error.name==='AbortError');
+ assert.equal(fs.existsSync(copyDestination),false);assert.equal(fs.readdirSync(out).filter(name=>name.includes('.partial.')).length,0);ok('The stream-copy export path also honors cancellation and leaves no partial destination');
+ await js('openClearEdits();document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",code:"Escape",bubbles:true,cancelable:true}));document.dispatchEvent(new KeyboardEvent("keyup",{key:"Escape",code:"Escape",bubbles:true,cancelable:true}));void 0');assert.equal(await js('$("clearEdits").open'),false);
+ await js('openSettings()');assert.ok(await js('Array.from($("shortcutRows").querySelectorAll("tr")).some(row=>row.textContent.includes("Počisti časovni"))'));await js('$("settings").close();void 0');
+ fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({success:true,checks,cancelMs,clipboardSize:{width:43,height:31}},null,2),'utf8');console.log(JSON.stringify({success:true,out}));Media.shutdown();app.exit(0);
+ }catch(error){console.error(error);Media.shutdown();app.exit(1);}});

@@ -262,7 +262,7 @@ async function exportToFolder(tab,folder){
   try{if(stroke)commitStroke();const s=tab.state,selection={in:s.in,out:s.out,crop:s.crop,cropSpace:s.cropSpace,rotation:s.rotation,flipX:s.flipX,flipY:s.flipY};
     if(s.drawings.length){selection.annotationRaster=drawingRaster(tab);const b=annotationBounds(tab);selection.annotationOffset={x:b.x,y:b.y};}
     if(tab.meta.isImage)selection.sourceRaster=imageRaster();
-    const options=readExportOptions(),result=await window.player.export({id:tab.meta.id,selection,folder,options});if(result){s.drawingsSaved=true;persistSoon();toast(tr('Shranjeno: ','Saved: ')+result.destination,6500);if(options.openAfterExport)await openFiles([result.destination]);}
+    const options=readExportOptions(),result=await window.player.export({id:tab.meta.id,selection,folder,options});if(result?.canceled){toast(tr('Izvoz preklican.','Export canceled.'));}else if(result){s.drawingsSaved=true;persistSoon();toast(tr('Shranjeno: ','Saved: ')+result.destination,6500);if(options.openAfterExport)await openFiles([result.destination]);}
   }catch(error){showError(error);}finally{exportBusy=false;}
 }
 function setSpeed(delta){const tab=current();if(!tab||!loaded||tab.meta.isImage)return;tab.state.rate=C.clamp(Math.round((video.playbackRate+delta)*100)/100,config.playback.minSpeed,config.playback.maxSpeed);video.playbackRate=tab.state.rate;toast(`${Math.round(tab.state.rate*100)} %`,1600,'speed');updateTimeline();persistSoon();controls();}
@@ -324,8 +324,10 @@ for(const [id,action] of [['minimize','minimize'],['maximize','maximize'],['clos
 window.player.onMaximized(maximized=>{$('maximize').querySelector('path').setAttribute('d',maximized?'M4 2h6v6M2 4h6v6H2Z':'M2 2h8v8H2Z');});
 window.player.onFullscreen(value=>{document.body.classList.toggle('systemFullscreen',value);layout();controls();});
 window.player.onFiles(files=>openFiles(files));
-window.player.onProgress(event=>{if(event.label)progress.set(event.id,event);else progress.delete(event.id);renderProgress();});
-function renderProgress(){const event=progress.get(current()?.meta.id)||[...progress.values()].find(p=>p.label==='Shranjevanje izreza');$('job').style.display=event?'block':'none';if(event){$('job').querySelector('span').textContent=event.label+' · '+Math.round(event.fraction*100)+' %';$('job').querySelector('progress').value=event.fraction;}}
+window.player.onProgress(event=>{const key=event.jobId||event.id;if(event.label)progress.set(key,event);else progress.delete(key);renderProgress();});
+function renderProgress(){const event=[...progress.values()].find(p=>p.kind==='export')||progress.get(current()?.meta.id);$('job').style.display=event?'block':'none';if(event){$('job').querySelector('span').textContent=event.label+' · '+Math.round(event.fraction*100)+' %';$('job').querySelector('progress').value=event.fraction;}$('cancelExport').hidden=!event?.jobId;$('cancelExport').disabled=!event?.cancellable;$('cancelExport').dataset.jobId=event?.jobId||'';}
+$('cancelExport').onclick=async event=>{event.stopPropagation();const button=$('cancelExport'),id=button.dataset.jobId;button.disabled=true;try{await window.player.cancelExport(id);}catch(error){showError(error);}};
+for(const event of ['pointerdown','pointerup','dblclick'])$('job').addEventListener(event,e=>e.stopPropagation());
 document.addEventListener('dragover',event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';});
 document.addEventListener('drop',event=>{event.preventDefault();const files=[...event.dataTransfer.files].map(file=>window.player.filePath(file)).filter(Boolean);if(files.length)openFiles(files);});
 window.addEventListener('beforeunload',()=>{capture();persistSoon(true);});

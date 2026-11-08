@@ -124,7 +124,7 @@ async function showExportMenu(tab){
   $('exportMenu').showModal();$('exportChoices').firstElementChild?.blur();
 }
 function readExportOptions(){return {videoFormat:$('exportVideo').value,audioFormat:$('exportAudio').value,imageFormat:$('exportImage').value,matchSource:$('exportQuality').checked,openAfterExport:$('exportOpen').checked,contentMode:$('exportContent').value};}
-function imageRaster(){const canvas=document.createElement('canvas'),img=$('image');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;canvas.getContext('2d').drawImage(img,0,0);return canvas.toDataURL('image/png').split(',')[1];}
+function imageRaster(tab=current()){const canvas=document.createElement('canvas'),img=tab.meta.isImage?$('image'):video;canvas.width=tab.meta.isImage?img.naturalWidth:tab.meta.width;canvas.height=tab.meta.isImage?img.naturalHeight:tab.meta.height;canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/png').split(',')[1];}
 const annotationBoundsCache=new WeakMap(),activeBoundsCache=new WeakMap();
 function annotationBounds(tab){const w=tab.meta.width,h=tab.meta.height,lines=tab.state.drawings;let cached=annotationBoundsCache.get(tab);const pointOutside=p=>p.x<0||p.y<0||p.x>w||p.y>h,needsMargin=line=>line.points?.some(pointOutside)||line.kind==='text'&&(line.x<0||line.y<0||line.x+line.boxWidth>w||line.y+line.boxHeight>h);
   if(!cached||cached.lines!==lines||cached.count!==lines.length||cached.last!==lines.at(-1)){cached={lines,count:lines.length,last:lines.at(-1),outside:lines.some(needsMargin)};annotationBoundsCache.set(tab,cached);}

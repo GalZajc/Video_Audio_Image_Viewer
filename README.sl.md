@@ -163,7 +163,7 @@ Omejevanje črte pri vrhu puščice je lokalno, zato starejši deli krivulj med 
 
 ## Različica 2.6.0
 
-Ctrl+C kopira sliko z enakim obrezom, rotacijo, zrcaljenjem in risbami kot PNG izvoz ter jo na kratko zeleno obarva. Pri videu in zvoku odložišče ostane nespremenjeno. Ctrl+O ponudi mape in mrežo shranjenih Windowsovih posnetkov zaslona, najnovejše najprej; klik odpre nov zavihek.
+Ctrl+C kopira sliko ali trenutno prikazani kader videa s krajevnim obrezom, rotacijo, zrcaljenjem in vidnimi risbami. Oznaki I/O ne vplivata na kopiranje posameznega kadra. Kratek svetlo moder utrip potrdi kopiranje. Pri zvoku odložišče ostane nespremenjeno. Ctrl+O ponudi mape in mrežo shranjenih Windowsovih posnetkov zaslona, najnovejše najprej; klik odpre nov zavihek.
 
 Ctrl+Shift+O odpre ločen prikaz za označevanje besedila z lokalnim Windowsovim OCR. Pri videu mora biti predvajanje ustavljeno. OCR uporabi izvirno sliko oziroma izvorno sličico, brez obreza, risb ali sprememb pogleda. Označi del besedila in uporabi Ctrl+C; Escape povrne prejšnji pogled. Uporabljeni so nameščeni Windowsovi jeziki. Drugi operacijski sistemi sporočijo omejitev tega OCR pogona. Obe novi bližnjici lahko preslikaš v nastavitvah.
 
@@ -204,3 +204,6 @@ OCR zdaj uporablja OneOCR iz nameščenega Microsoftovega Snipping Toola. Izvorn
 Na zasebnem screenshotu 580 × 771 je prej potreboval 20,9 s in 97 prehodov; OneOCR potrebuje približno 1,8–2,7 s za samo prepoznavo in en prehod. Prva uporaba dodatno pripravi model. V ročno prepisanem delu s 1.618 znaki in 263 besedami je število napačnih znakov padlo z 214 na 4; preostale napake vključujejo AI/Al. To je meritev na konkretnem primeru, ne zagotovilo brezhibnega OCR. Ponovno odprtje iste slike je trajalo približno 40–50 ms. Preverjena sta običajno slovensko/angleško besedilo s šumniki in 20 različnih zasukov.
 
 Potrebuje nameščen Snipping Tool. Njegove knjižnice in model shrani v zasebni DATA/cache/oneocr-runtime, niso vključeni v javni ZIP ali Git. UTF-8 je nastavljen samo za proces OCR, zato slovenske poti ostanejo pravilne. Če sodobni pogon ni na voljo, uporabi en prehod starejšega Windowsovega pogona in v diagnostiki navede razlog. Nastavitve pogona so zbrane v config.extras.ocrEngine; po petih minutah mirovanja se proces zapre. Ne potrebuje Pythona, dodatnega SDK ali pošiljanja slik na splet.
+
+
+Med izvozom je ob prikazu napredka gumb Prekliči. Ustavi trenutno kodiranje oziroma kopiranje, odstrani nedokončan izhod in ohrani morebitno obstoječo ciljno datoteko. Ctrl+Shift+Delete odpre majhen centriran meni z ločenimi izbirami: časovni obrez (I/O), krajevni obrez in risbe. Počisti samo označene stvari trenutnega zavihka. Bližnjico lahko preslikaš v nastavitvah.

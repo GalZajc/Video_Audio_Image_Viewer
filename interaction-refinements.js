@@ -29,7 +29,7 @@ document.addEventListener('keydown',e=>{
   if(recording){const other=Object.entries(settings.shortcuts).find(([key,value])=>key!==recording.action&&value===binding);if(other){toast(tr('Ta bližnjica je že uporabljena.','This shortcut is already in use.'));return;}saveSettings({...settings,shortcuts:{...settings.shortcuts,[recording.action]:binding}});return;}
   const action=Object.keys(settings.shortcuts).find(key=>settings.shortcuts[key]===binding);if(action)runAction(action);
 },true);
-document.addEventListener('keyup',e=>{if(e.code!=='Escape'||!escapeHeld)return;const pending=escapeHeld;escapeHeld=null;e.preventDefault();e.stopImmediatePropagation();if(pending.used)return;if(recording){recording=null;renderSettings();return;}if($('choiceDialog').open){$('choiceDialog').close('cancel');return;}if($('inlineText').contains(document.activeElement)){finishInlineText();return;}escape(pending.expand);},true);
+document.addEventListener('keyup',e=>{if(e.code!=='Escape'||!escapeHeld)return;const pending=escapeHeld;escapeHeld=null;e.preventDefault();e.stopImmediatePropagation();if(pending.used)return;if(recording){recording=null;renderSettings();return;}if($('clearEdits').open){$('clearEdits').close('cancel');return;}if($('choiceDialog').open){$('choiceDialog').close('cancel');return;}if($('inlineText').contains(document.activeElement)){finishInlineText();return;}escape(pending.expand);},true);
 window.addEventListener('blur',()=>{escapeHeld=null;pivotDrag=null;});
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('cancel',e=>e.preventDefault());
 $('angleInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();$('rotationInput').close('apply');}});

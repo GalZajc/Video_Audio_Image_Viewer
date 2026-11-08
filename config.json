@@ -136,7 +136,8 @@
     "subtitles": "KeyC",
     "timelinePreview": "KeyP",
     "copyImage": "Ctrl+KeyC",
-    "ocr": "Ctrl+Shift+KeyO"
+    "ocr": "Ctrl+Shift+KeyO",
+    "clearEdits": "Ctrl+Shift+Delete"
   },
   "mediaTypes": {
     "video": [

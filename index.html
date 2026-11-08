@@ -31,7 +31,7 @@
     <div id="audioLabel"><span>♫</span><p></p></div>
     <div id="zoomReadout"></div><div id="captions" hidden></div>
     <div id="toast" role="status"></div>
-    <div id="job"><span></span><progress max="1" value="0"></progress></div>
+    <div id="job"><span></span><button id="cancelExport" type="button" hidden data-sl="Prekliči" data-en="Cancel"></button><progress max="1" value="0"></progress></div>
     <div id="transport">
       <div id="readout"><span id="time"></span><span id="selection"></span><span id="rate"></span></div>
       <div id="timeline" role="slider" aria-label="Časovnica" tabindex="0"><div id="track"><div id="elapsed"></div><div id="interval"></div><i id="inMarker"></i><i id="outMarker"></i><b id="playhead"></b></div><div id="timelineTip"></div></div>
@@ -75,6 +75,7 @@
     <div id="colorSliders"></div>
   </dialog>
   <dialog id="choiceDialog" class="smallDialog"><form method="dialog"><div id="choiceTitle" class="dialogTitle"></div><p id="choiceDetail"></p><div id="choiceButtons" class="dialogActions"></div></form></dialog>
+  <dialog id="clearEdits" class="smallDialog"><form method="dialog"><div class="dialogTitle" data-sl="Kaj želiš počistiti?" data-en="What would you like to clear?"></div><label class="clearOption"><input id="clearTemporal" type="checkbox"><span data-sl="Časovni obrez (I/O)" data-en="Time selection (I/O)"></span></label><label class="clearOption"><input id="clearSpatial" type="checkbox"><span data-sl="Krajevni obrez" data-en="Spatial crop"></span></label><label class="clearOption"><input id="clearDrawings" type="checkbox"><span data-sl="Risbe" data-en="Drawings"></span></label><div class="dialogActions"><button id="cancelClearEdits" type="button" data-sl="Prekliči" data-en="Cancel"></button><button id="applyClearEdits" type="submit" disabled data-sl="Počisti" data-en="Clear"></button></div></form></dialog>
   <script src="caption-parser.js"></script>
   <script src="core.js"></script>
   <script src="arrow-filter.js"></script><script src="curve-filter.js"></script><script src="arrow-base-direction.js"></script><script src="arrow-ink.js"></script><script src="visual.js"></script>
@@ -90,5 +91,6 @@
   <script src="live-drawing.js"></script>
   <script src="floating-tools.js"></script>
   <script src="viewer-extras.js"></script>
+  <script src="clear-edits.js"></script>
 </body>
 </html>

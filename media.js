@@ -19,9 +19,12 @@ function cacheMetadata(file,stat,meta){
   while(metadataCache.size>(config.storage.metadataEntries||128))metadataCache.delete(metadataCache.keys().next().value);
 }
 function tool(name){const local=path.join(__dirname,'bin',name+(process.platform==='win32'?'.exe':''));return config.tools[name] || (fs.existsSync(local)?local:name);}
-function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false}={}) {
+function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false,signal}={}) {
   return new Promise((resolve,reject)=>{
+    if(signal?.aborted)return reject(signal.reason);
     const child=spawn(tool(name),args,{windowsHide:true});processes.add(child);
+    const abort=()=>child.kill();signal?.addEventListener('abort',abort,{once:true});
+    child.once('close',()=>signal?.removeEventListener('abort',abort));
     let output='',error='',carry='',chunks=[],bytes=0;
     child.stdout.on('data',chunk=>{
       if(progress){carry+=chunk.toString();const lines=carry.split('\n');carry=lines.pop();for(const line of lines){const m=/^out_time_us=(\d+)/.exec(line);if(m)progress(Math.min(.999,Number(m[1])/1e6/Math.max(duration,.001)));}}
@@ -29,7 +32,7 @@ function run(name,args,{progress,duration,stdoutLimit=8*1024*1024,binary=false}=
     });
     child.stderr.on('data',chunk=>{error=(error+chunk.toString()).slice(-16000);});
     child.on('error',e=>{processes.delete(child);reject(new Error(`${name}: ${e.message}`));});
-    child.on('close',code=>{processes.delete(child);code===0?resolve(binary?Buffer.concat(chunks):output):reject(new Error(error || `${name} se je končal (${code}).`));});
+    child.on('close',code=>{processes.delete(child);if(signal?.aborted)return reject(signal.reason);code===0?resolve(binary?Buffer.concat(chunks):output):reject(new Error(error || `${name} se je končal (${code}).`));});
   });
 }
 function parseRate(value){const [a,b]=String(value||'0/1').split('/').map(Number);return a/(b||1);}
@@ -145,7 +148,8 @@ async function proxy(meta,notify){
   });proxyQueue=task.catch(()=>{});return task;
 }
 function exportPlan(meta,request,settings){return require('./export-plan')(meta,request,settings,config);}
-async function exportMedia(meta,request,settings,destination,notify){
+async function exportMedia(meta,request,settings,destination,notify,{signal}={}){
+  signal?.throwIfAborted();
   if(path.resolve(destination).toLowerCase()===meta.path.toLowerCase())throw new Error('Izvorne datoteke ni mogoče prepisati. Izberi drugo ime.');
   const preliminary=exportPlan(meta,request,settings);
   const temp=path.join(path.dirname(destination),`.${path.basename(destination)}.${crypto.randomUUID()}.partial.${preliminary.format}`);
@@ -160,12 +164,15 @@ async function exportMedia(meta,request,settings,destination,notify){
   await fs.promises.writeFile(path.join(output,'parameters.json'),JSON.stringify(record,null,2),'utf8');
   notify({label:'Shranjevanje izreza',fraction:0});
   try{
-    if(plan.binaryCopy){const source=fs.createReadStream(meta.path,{highWaterMark:1024*1024});let bytes=0,last=0;source.on('data',chunk=>{bytes+=chunk.length;if(Date.now()-last>150){notify({label:'Shranjevanje izreza',fraction:bytes/meta.size});last=Date.now();}});await pipeline(source,fs.createWriteStream(temp));}
-    else await run('ffmpeg',[...plan.args,temp],{duration:plan.end-plan.start,progress:fraction=>notify({label:'Shranjevanje izreza',fraction})});
+    signal?.throwIfAborted();
+    if(plan.binaryCopy){const source=fs.createReadStream(meta.path,{highWaterMark:1024*1024});let bytes=0,last=0;source.on('data',chunk=>{bytes+=chunk.length;if(Date.now()-last>150){notify({label:'Shranjevanje izreza',fraction:bytes/meta.size});last=Date.now();}});await pipeline(source,fs.createWriteStream(temp),{signal});}
+    else await run('ffmpeg',[...plan.args,temp],{signal,duration:plan.end-plan.start,progress:fraction=>notify({label:'Shranjevanje izreza',fraction})});
+    signal?.throwIfAborted();
+    notify({label:'Zaključevanje izvoza',fraction:1,cancellable:false});
     await fs.promises.rename(temp,destination);
     await fs.promises.writeFile(path.join(output,'result.json'),JSON.stringify({success:true,destination,bytes:(await fs.promises.stat(destination)).size},null,2),'utf8');
     notify({label:'',fraction:1});return {destination,videoCopy:plan.videoCopy,audioCopy:plan.audioCopy};
-  }catch(e){await fs.promises.rm(temp,{force:true});await fs.promises.writeFile(path.join(output,'result.json'),JSON.stringify({success:false,error:e.message},null,2),'utf8');throw e;}
+  }catch(e){await fs.promises.rm(temp,{force:true});await fs.promises.writeFile(path.join(output,'result.json'),JSON.stringify({success:false,canceled:!!signal?.aborted,error:e.message},null,2),'utf8');throw e;}
 }
 function release(id){mediaById.delete(id);indexTasks.delete(id);}
 function shutdown(){for(const p of processes)p.kill();}

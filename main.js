@@ -15,6 +15,7 @@ protocol.registerSchemesAsPrivileged([{scheme:'media',privileges:{standard:true,
 let win,ready=false,exporting=false,pending=[],state={tabs:[],active:0,closed:[],history:[]},settings;
 const {openFileLimit,createFileOpenGuard}=require('./file-open-safety');
 const authorizeFiles=createFileOpenGuard({getSettings:()=>settings,showMessageBox:require('./file-open-dialog-main')(ipcMain),defaultLimit:defaults.preferences.maxOpenFiles});
+let exportJob=null;
 let writeQueue=Promise.resolve();
 const windowContexts=new Map(),releaseRequests=new Set();let quitting=false,quitContexts=[],quitActive=null,quitFlushed=false;
 const toolWindows=require('./tool-windows-main')({ipcMain,screen,defaults,contextFor,data,getSettings:()=>settings,getHeldDrawing:()=>tabWindows?.getHeldDrawing()});
@@ -161,10 +162,14 @@ ipcMain.handle('export',async(_event,{id,selection,folder,options})=>{const win=
   const name=path.basename(meta.path,path.extname(meta.path))+'_izrez.'+plan.format;
   const result=await dialog.showSaveDialog(win,{title:settings.language==='en'?'Save selection':'Shrani izrez',defaultPath:path.join((typeof folder==='string'&&fs.existsSync(folder)&&fs.statSync(folder).isDirectory())?folder:app.getPath('downloads'),name),filters:[{name:plan.format.toUpperCase(),extensions:[plan.format]}]});
   if(result.canceled)return null;
+  if(exporting)throw new Error('Izvoz že poteka.');
   let destination=result.filePath;if(path.extname(destination).toLowerCase()!=='.'+plan.format)destination+='.'+plan.format;
-  exporting=true;
-  try{const exported=await Media.exportMedia(meta,selection,exportSettings,destination,event=>notify(id,event));const dir=path.dirname(destination),recent=load('recent-folders.json',[]);await persist('recent-folders.json',[dir,...recent.filter(p=>p.toLowerCase()!==dir.toLowerCase())].slice(0,defaults.storage.recentFolders));return exported;}finally{exporting=false;notify(id,{label:'',fraction:1});}
+  exporting=true;const job=exportJob={jobId:require('node:crypto').randomUUID(),controller:new AbortController(),cancellable:true};
+  const progress=event=>{if(event.cancellable===false)job.cancellable=false;notify(id,{...event,kind:'export',jobId:job.jobId,cancellable:job.cancellable&&!job.controller.signal.aborted});};
+  progress({label:settings.language==='en'?'Exporting selection':'Shranjevanje izreza',fraction:0});
+  try{const exported=await Media.exportMedia(meta,selection,exportSettings,destination,progress,{signal:job.controller.signal});const dir=path.dirname(destination),recent=load('recent-folders.json',[]);await persist('recent-folders.json',[dir,...recent.filter(p=>p.toLowerCase()!==dir.toLowerCase())].slice(0,defaults.storage.recentFolders));return exported;}catch(error){if(job.controller.signal.aborted)return {canceled:true};throw error;}finally{exporting=false;exportJob=null;progress({label:'',fraction:1,cancellable:false});sweepReleases();}
 });
+ipcMain.handle('cancel-export',(event,jobId)=>{contextFor(event);if(!exportJob||exportJob.jobId!==jobId||!exportJob.cancellable||exportJob.controller.signal.aborted)return false;exportJob.controller.abort();return true;});
 ipcMain.handle('export-folders',(_event,request)=>{
   const meta=metaFor(typeof request==='string'?request:request.id),type=request.kind||meta.kind,order=[type,...['video','audio','image'].filter(t=>t!==type)],key={video:'videos',audio:'music',image:'pictures'};
   return {choices:[{key:'source',path:path.dirname(meta.path)},{key:'downloads',path:app.getPath('downloads')},...order.map(t=>({key:t,path:app.getPath(key[t])}))],recent:load('recent-folders.json',[]).filter(p=>fs.existsSync(p))};
